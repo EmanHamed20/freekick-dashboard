@@ -1,38 +1,101 @@
 // services/bookingService.js
-import axios from 'axios';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import api from '../api.js';
 
 export const bookingService = {
-    // Get all bookings
+    // Analytics endpoints
+    getCardAnalytics: async () => {
+        const response = await api.get('/booking/analytics/card-analytics/');
+        return response.data;
+    },
+
+    getRevenueTrend: async () => {
+        const response = await api.get('/booking/analytics/revenue-trend/');
+        return response.data;
+    },
+
+    getTopEmirates: async () => {
+        const response = await api.get('/booking/analytics/top-emirates/');
+        return response.data;
+    },
+
+    getWeeklyBookingAnalytics: async () => {
+        const response = await api.get('/booking/analytics/weekly-booking-analytics/');
+        return response.data;
+    },
+
+    // Booking CRUD operations
     getAll: async (filters) => {
-        const response = await axios.get(`${API_BASE_URL}/bookings`, {
+        const response = await api.get('/booking/book/', {
             params: filters
         });
         return response.data;
     },
 
-    // Get single booking
     getById: async (id) => {
-        const response = await axios.get(`${API_BASE_URL}/bookings/${id}`);
+        const response = await api.get(`/booking/book/${id}/`);
         return response.data;
     },
 
-    // Create booking
     create: async (bookingData) => {
-        const response = await axios.post(`${API_BASE_URL}/bookings`, bookingData);
+        const response = await api.post('/booking/book/', bookingData);
         return response.data;
     },
 
-    // Update booking
     update: async (id, bookingData) => {
-        const response = await axios.put(`${API_BASE_URL}/bookings/${id}`, bookingData);
+        const response = await api.put(`/booking/book/${id}/`, bookingData);
         return response.data;
     },
 
-    // Delete booking
+    partialUpdate: async (id, bookingData) => {
+        const response = await api.patch(`/booking/book/${id}/`, bookingData);
+        return response.data;
+    },
+
     delete: async (id) => {
-        const response = await axios.delete(`${API_BASE_URL}/bookings/${id}`);
+        const response = await api.delete(`/booking/book/${id}/`);
+        return response.data;
+    },
+
+    // Booking calculation and operations
+    calculatePriceWithExistingBooking: async (id) => {
+        const response = await api.post(`/booking/book/${id}/calculate_price_one_user_with_existing_booking/`);
+        return response.data;
+    },
+
+    cancelBooking: async (id) => {
+        const response = await api.post(`/booking/book/${id}/cancel_booking/`);
+        return response.data;
+    },
+
+    calculateBookingTotalPrice: async (bookingData) => {
+        const response = await api.post('/booking/book/calculate_booking_total_price/', bookingData);
+        return response.data;
+    },
+
+    calculatePriceForOneUser: async (userData) => {
+        const response = await api.post('/booking/book/calculate_price_for_one_user/', userData);
+        return response.data;
+    },
+
+    checkBookingAvailability: async (availabilityData) => {
+        const response = await api.post('/booking/book/check_booking_is_available/', availabilityData);
+        return response.data;
+    },
+
+    // Join booking operations
+    joinBooking: async (bookingData) => {
+        const response = await api.post('/booking/join-booking/', bookingData);
+        return response.data;
+    },
+
+    cancelJoinBooking: async (bookId) => {
+        const response = await api.post(`/booking/join-booking/cancel/${bookId}/`);
+        return response.data;
+    },
+
+    // Walk-ins
+    getWalkIns: async () => {
+        const response = await api.get('/booking/walk-ins/');
         return response.data;
     }
 };

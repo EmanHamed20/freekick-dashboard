@@ -4,7 +4,7 @@ import MainLayout from '../components/layout/MainLayout.jsx';
 
 // Import Pages
 import Dashboard from '../pages/Dashboard/Dashboard';
-// import Bookings from '../pages/Bookings/Bookings';
+import Bookings from '../pages/Bookings/Booking.jsx';
 // import Calendar from '../pages/Calendar/Calendar';
 // import Venues from '../pages/Venues/Venues';
 // import Pitches from '../pages/Pitches/Pitches';
@@ -15,23 +15,23 @@ import Dashboard from '../pages/Dashboard/Dashboard';
 // import Players from '../pages/Players/Players';
 // import PitchOwners from '../pages/PitchOwners/PitchOwners';
 // import Settings from '../pages/Settings/Settings';
-// import Login from '../pages/Auth/Login';
+import Login from '../pages/Login.jsx';
 // import NotFound from '../pages/NotFound/NotFound';
 
 // Protected Route Component
 import ProtectedRoute from './ProtectedRoute';
 
 const router = createBrowserRouter([
-    // {
-    //     path: '/login',
-    //     element: <Login />,
-    // },
+    {
+        path: '/login',
+        element: <Login />,
+    },
     {
         path: '/',
         element: (
-            // <ProtectedRoute>
+            <ProtectedRoute>
                 <MainLayout />
-            // </ProtectedRoute>
+             </ProtectedRoute>
         ),
         children: [
             {
@@ -40,7 +40,7 @@ const router = createBrowserRouter([
             },
             {
                 path: 'bookings',
-                // element: <Bookings />,
+                element: <Bookings />,
             },
             {
                 path: 'calendar',
