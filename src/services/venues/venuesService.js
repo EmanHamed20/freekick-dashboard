@@ -2,16 +2,15 @@ import api from '../api.js';
 import { toast } from 'react-toastify';
 
 
-// services/pitches/pitchesService.js
-export const pitchesService = {
-    // view all pitches
-    getAllPitchess: async () => {
+export const venuesService = {
+    // view all venues
+    getAllVenues: async () => {
         try {
-            const response = await api.get('/venue/pitch/pitches/');
+            const response = await api.get('/venue/venue/venues/');
             toast.success("Pitches loaded successfully!");
             return response.data;
         } catch (error) {
-            const message = error.response?.data?.message || "Failed to load pitches";
+            const message = error.response?.data?.message || "Failed to load venues";
             toast.error(message);
             throw error;
         }
