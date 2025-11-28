@@ -1,86 +1,151 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useDispatch } from 'react-redux'; // 1. Import useDispatch
-
+import { useDispatch } from 'react-redux';
 import MainTable from './../../components/MainTable';
 import { Eye, Pencil, Trash2 } from 'lucide-react';
-import { pitchesService } from '../../services/pitches/pitchesService.js';
 import { setPageTitle } from '../../features/pageTitle/pageTitleSlice';
-import PitchesForm from "../../components/pitches/PitchesForm.jsx"; // 2. Import Action
+import PitchesForm from "../../components/pitches/PitchesForm.jsx";
+import { pitchesService } from '../../services/pitches/pitchesService.js';
+import { venuesService } from '../../services/venues/venuesService.js';
+import { showConfirm } from '../../components/showConfirm.jsx';
 
 const Pitches = () => {
-    // --- Configuration ---
     const rowsPerPage = 10;
-    // --- Redux Title Setter ---
-
     const dispatch = useDispatch();
 
     useEffect(() => {
-        dispatch(setPageTitle('Pitches')); // 3. Set the title when component mounts
+        dispatch(setPageTitle('Pitches'));
     }, [dispatch]);
 
-
-    // --- State Management ---
-    const [pitchesData, setPitchesData] = useState([]); // Raw data from API
+    // State Management
+    const [pitchesData, setPitchesData] = useState([]);
+    const [venuesData, setVenuesData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-
-    // Pagination
     const [currentPage, setCurrentPage] = useState(1);
+    const [showForm, setShowForm] = useState(false);
 
-    // Filter State (Stores the values of our inputs)
+    // Filter State
     const [activeFilters, setActiveFilters] = useState({
         status: '',
         type: '',
+        venue: '',
+        price: '',
         pitcherName: '',
-        globalSearch: '' // We will merge the main search bar here too
+        globalSearch: ''
     });
 
-    // --- 1. Fetch Data ---
-    useEffect(() => {
-        const fetchData = async () => {
-            setIsLoading(true);
-            try {
-                // Ideally, you pass filters to the API here.
-                // For this example, we fetch page 1 (or all) and filter client-side.
-                const response = await pitchesService.getAllPitchess(currentPage);
-                if (response) {
-                    if (response.results) setPitchesData(response.results);
-                }
-            } catch (error) {
-                console.error("Failed to fetch pitches:", error);
-            } finally {
-                setIsLoading(false);
+    // Fetch Data
+    const fetchPitchesData = async () => {
+        setIsLoading(true);
+        try {
+            const response = await pitchesService.getAllPitchess(currentPage);
+            if (response && response.results) {
+                setPitchesData(response.results);
             }
-        };
-        fetchData();
-    }, []); // Removed [currentPage] dependency to keep client-side filtering simple on loaded data
+        } catch (error) {
+            console.error("Failed to fetch pitches:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
-    // --- 2. Filtering Logic (The "Brain") ---
+    const fetchVenuesData = async () => {
+        try {
+            const response = await venuesService.getAllVenues();
+            if (response && response.results) {
+                const formattedVenues = response.results.map((venue) => ({
+                    label: venue.translations.name,
+                    value: venue.id
+                }));
+                setVenuesData(formattedVenues);
+            }
+        } catch (error) {
+            console.error("Failed to fetch venues:", error);
+        }
+    };
+
+    const fetchAllData = async () => {
+        setIsLoading(true);
+        try {
+            await Promise.all([fetchPitchesData(), fetchVenuesData()]);
+        } catch (error) {
+            console.error("Failed to fetch data:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchAllData();
+    }, []);
+
+    // Form Handlers
+    const handleCreatePitch = () => setShowForm(true);
+    const handleCancelForm = () => setShowForm(false);
+    const handleFormSuccess = () => {
+        setShowForm(false);
+        fetchAllData();
+    };
+
+    const handleDeletePitch = async (id, pitchName) => {
+        const isConfirmed = await showConfirm({
+            title: `Delete "${pitchName}"?`,
+            text: "This action cannot be undone. The pitch will be permanently removed.",
+            confirmButtonText: 'Yes, Delete it'
+        });
+
+        if (!isConfirmed) return;
+
+        try {
+            await pitchesService.deletePitch(id);
+            setPitchesData(prev => prev.filter(pitch => pitch.id !== id));
+        } catch (error) {
+            console.error("Failed to delete pitch:", error);
+        }
+    };
+
+    // 👇 Filtering Logic
     const filteredData = useMemo(() => {
+        if (!pitchesData) return [];
+
         return pitchesData.filter((item) => {
-            // 1. Filter by Status (Dropdown)
+            // 1. Status
             if (activeFilters.status && activeFilters.status !== 'all') {
-                // Convert boolean is_active to string for comparison
                 if (String(item.is_active) !== activeFilters.status) return false;
             }
 
-            // 2. Filter by Type/Size (Dropdown)
+            // 2. Type
             if (activeFilters.type && activeFilters.type !== 'all') {
                 if (String(item.size) !== activeFilters.type) return false;
             }
 
-            // 3. Filter by Pitcher Name (Text Input)
+            // 3. Venue
+            if (activeFilters.venue && activeFilters.venue !== 'all') {
+                if (String(item.venue) !== String(activeFilters.venue)) return false;
+            }
+
+            // 4. Price (Exact Match)
+            if (activeFilters.price) {
+                const itemPrice = parseFloat(item.price_per_hour || 0);
+                const filterPrice = parseFloat(activeFilters.price);
+
+                // Check if the number is valid, then check for EXACT equality
+                if (!isNaN(filterPrice)) {
+                    if (itemPrice !== filterPrice) return false;
+                }
+            }
+
+            // 5. Pitcher Name
             if (activeFilters.pitcherName) {
                 const name = item.translations?.name?.toLowerCase() || '';
                 const searchTerm = activeFilters.pitcherName.toLowerCase();
                 if (!name.includes(searchTerm)) return false;
             }
 
-            // 4. Global Search (Top Search Bar)
+            // 6. Global Search
             if (activeFilters.globalSearch) {
                 const search = activeFilters.globalSearch.toLowerCase();
                 const name = item.translations?.name?.toLowerCase() || '';
                 const venue = String(item.venue);
-                // Search in Name OR Venue ID
                 if (!name.includes(search) && !venue.includes(search)) return false;
             }
 
@@ -88,64 +153,55 @@ const Pitches = () => {
         });
     }, [pitchesData, activeFilters]);
 
-    // --- 3. Handlers ---
-
-    // Updates specific filters (from the dynamic inputs)
+    // Handlers
     const handleFilterChange = (newFilters) => {
         setActiveFilters(prev => ({ ...prev, ...newFilters }));
-        setCurrentPage(1); // Reset to page 1 when filtering
+        setCurrentPage(1);
     };
 
-    // Updates global search (from the main search bar)
     const handleSearch = (term) => {
         setActiveFilters(prev => ({ ...prev, globalSearch: term }));
         setCurrentPage(1);
     };
 
-    const handlePageChange = (pageNumber) => {
-        setCurrentPage(pageNumber);
-    };
+    const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
-    // --- 4. Configuration for Inputs ---
-    const filterConfig = [
-        {
-            key: 'status',
-            label: 'Filter Status',
-            type: 'select',
-            options: [
-                { label: 'Active', value: 'true' },
-                { label: 'Hidden', value: 'false' }
-            ]
-        },
-        {
-            key: 'type',
-            label: 'Pitch Type',
-            type: 'select',
-            options: [
-                { label: '5 a side', value: '5' },
-                { label: '7 a side', value: '7' }
-            ]
-        },
-        {
-            key: 'pitcherName',
-            label: 'Pitcher Name...',
-            type: 'text' // Text Input
-        }
-    ];
-
-    // --- 5. Columns & Actions ---
-    const StatusBadge = ({ isActive }) => {
-        const style = isActive ? 'bg-green-400 text-white' : 'bg-gray-500 text-white';
-        return <span className={`px-3 py-1 rounded-md text-xs font-medium ${style}`}>{isActive ? 'Active' : 'Hidden'}</span>;
-    };
-
-    const ActionButtons = () => (
+    const ActionButtons = ({ pitch }) => (
         <div className="flex justify-center items-center gap-4">
-            <button className="text-gray-500 hover:text-teal-600"><Eye size={18} /></button>
-            <button className="text-gray-500 hover:text-blue-600"><Pencil size={18} /></button>
-            <button className="text-gray-500 hover:text-red-600"><Trash2 size={18} /></button>
+            <button className="text-gray-500 hover:text-teal-600" title="View Pitch">
+                <Eye size={18} />
+            </button>
+            <button className="text-gray-500 hover:text-blue-600" title="Edit Pitch">
+                <Pencil size={18} />
+            </button>
+            <button
+                className="text-gray-500 hover:text-red-600"
+                onClick={() => handleDeletePitch(pitch.id, pitch.translations?.name || `Pitch ${pitch.id}`)}
+                title="Delete Pitch"
+            >
+                <Trash2 size={18} />
+            </button>
         </div>
     );
+
+    // Filter Config
+    const filterConfig = [
+        {
+            key: 'venue',
+            label: 'Filter Venues',
+            type: 'select',
+            options: venuesData || [],
+            value: activeFilters.venue
+        },
+        {
+            key: 'price',
+            label: 'Price Per Hour', // Changed label
+            type: 'number',
+            placeholder: 'e.g. 200',
+            options: [],
+            value: activeFilters.price
+        }
+    ];
 
     const columns = [
         {
@@ -159,40 +215,66 @@ const Pitches = () => {
                 </div>
             )
         },
-        { header: 'Venue Name', accessor: 'venue', render: (row) => <a href="#" className="text-blue-600 hover:underline">Venue #{row.venue}</a> },
-        { header: 'Status', accessor: 'is_active', align: 'center', render: (row) => <StatusBadge isActive={row.is_active} /> },
-        { header: 'Type', accessor: 'size', render: (row) => <span>{row.size} a side</span> },
-        { header: 'Pricing/hour', accessor: 'price_per_hour', render: (row) => <span>AED {parseFloat(row.price_per_hour || 0).toLocaleString()}</span> },
-        { header: 'Quick Actions', align: 'center', render: () => <ActionButtons /> }
+        {
+            header: 'Venue Name',
+            accessor: 'venue',
+            render: (row) => <a href="#" className="text-blue-600 hover:underline">Venue #{row.venue}</a>
+        },
+        {
+            header: 'Status',
+            accessor: 'is_active',
+            align: 'center',
+            render: (row) => <StatusBadge isActive={row.is_active} />
+        },
+        {
+            header: 'Type',
+            accessor: 'size',
+            render: (row) => <span>{row.size} a side</span>
+        },
+        {
+            header: 'Pricing/hour',
+            accessor: 'price_per_hour',
+            render: (row) => <span>AED {parseFloat(row.price_per_hour || 0).toLocaleString()}</span>
+        },
+        {
+            header: 'Quick Actions',
+            align: 'center',
+            render: (row) => <ActionButtons pitch={row} />
+        }
     ];
 
     const topActions = [
-        { label: 'Create Pitch', onClick: () => console.log('Create'), type: 'primary' }
+        {
+            label: 'Create Pitch',
+            onClick: handleCreatePitch,
+            type: 'primary'
+        }
     ];
 
     return (
         <div className="w-full">
-            {/*<PitchesForm/>*/}
+            {showForm && (
+                <div className='mt-12'>
+                    <PitchesForm
+                        venuesData={venuesData}
+                        onCancel={handleCancelForm}
+                        onSuccess={handleFormSuccess}
+                    />
+                </div>
+            )}
+
             {isLoading && pitchesData.length === 0 ? (
                 <div className="p-10 text-center text-gray-500">Loading...</div>
             ) : (
                 <MainTable
-                    // Pass the FILTERED data, not raw data
-                    data={filteredData}
+                    data={filteredData || []}
                     columns={columns}
-
-                    // Configuration
                     filters={filterConfig}
                     searchPlaceholder="Search Name or Venue ID"
                     topActions={topActions}
-
-                    // Pagination based on FILTERED results
                     currentPage={currentPage}
-                    // IMPORTANT: Total items is now the length of the filtered array
-                    totalItems={filteredData.length}
+                    totalItems={filteredData?.length || 0}
                     itemsPerPage={rowsPerPage}
-
-                    // Actions
                     onSearch={handleSearch}
                     onFilterChange={handleFilterChange}
                     onPageChange={handlePageChange}
@@ -200,6 +282,11 @@ const Pitches = () => {
             )}
         </div>
     );
+};
+
+const StatusBadge = ({ isActive }) => {
+    const style = isActive ? 'bg-green-400 text-white' : 'bg-gray-500 text-white';
+    return <span className={`px-3 py-1 rounded-md text-xs font-medium ${style}`}>{isActive ? 'Active' : 'Hidden'}</span>;
 };
 
 export default Pitches;
