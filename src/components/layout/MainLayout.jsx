@@ -4,7 +4,6 @@ import Sidebar from './Sidebar.jsx';
 import Header from './Header.jsx';
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
-import {ToastContainer} from "react-toastify";
 
 const MainLayout = () => {
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -12,8 +11,6 @@ const MainLayout = () => {
 
     return (
         <div className={`flex h-screen bg-gray-50 overflow-hidden ${direction === 'rtl' ? 'flex-row-reverse' : ''}`}>
-            <ToastContainer position={`${direction==="rtl"?"top-left":"top-right"}`} autoClose={3000} />
-
             {/* Sidebar - Fixed Position */}
             <Sidebar onToggle={setIsSidebarCollapsed} />
 

@@ -3,15 +3,20 @@ import api from './api.js';
 
 export const authService = {
     login: async (phone, password) => {
-
         try {
             const response = await api.post('/auth/jwt/create/', {
-                phone: phone,
-                password: password
+                phone,
+                password
             });
             return response.data;
         } catch (error) {
-            throw error;
+            // Handle the specific API error structure
+            const errorMessage = error.response?.data?.message
+                || error.response?.data?.details?.[0]?.message
+                || error.response?.data?.detail
+                || 'Login failed. Please try again.';
+
+            throw new Error(errorMessage);
         }
     },
 
@@ -20,20 +25,33 @@ export const authService = {
             const response = await api.get('/auth/users/me/');
             return response.data;
         } catch (error) {
-            throw error;
+            const errorMessage = error.response?.data?.message
+                || error.response?.data?.details?.[0]?.message
+                || error.response?.data?.detail
+                || 'Failed to fetch user data.';
+
+            throw new Error(errorMessage);
         }
     },
 
     logout: async () => {
-        // Since there's no backend API for logout, we just return a resolved promise
-        // The actual token clearing happens in the Redux action
+        // Token clearing happens in Redux action
         return Promise.resolve({ success: true });
     },
 
     refreshToken: async (refreshToken) => {
-        const response = await api.post('/auth/jwt/refresh/', {
-            refresh: refreshToken
-        });
-        return response.data;
+        try {
+            const response = await api.post('/auth/jwt/refresh/', {
+                refresh: refreshToken
+            });
+            return response.data;
+        } catch (error) {
+            const errorMessage = error.response?.data?.message
+                || error.response?.data?.details?.[0]?.message
+                || error.response?.data?.detail
+                || 'Token refresh failed.';
+
+            throw new Error(errorMessage);
+        }
     }
 };

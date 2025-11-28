@@ -23,7 +23,7 @@ export const bookingService = {
         return response.data;
     },
 
-    // Booking CRUD operations
+
     getAll: async (filters) => {
         const response = await api.get('/booking/book/', {
             params: filters
@@ -88,6 +88,16 @@ export const bookingService = {
         return response.data;
     },
 
+    getJoinBookings: async () => {
+        const response = await api.get('/booking/join-booking/');
+        return response.data;
+    },
+
+    getJoinBookingById: async (id) => {
+        const response = await api.get(`/booking/join-booking/${id}/`);
+        return response.data;
+    },
+
     cancelJoinBooking: async (bookId) => {
         const response = await api.post(`/booking/join-booking/cancel/${bookId}/`);
         return response.data;
@@ -96,6 +106,62 @@ export const bookingService = {
     // Walk-ins
     getWalkIns: async () => {
         const response = await api.get('/booking/walk-ins/');
+        return response.data;
+    },
+
+    createWalkIn: async (walkInData) => {
+        const response = await api.post('/booking/walk-ins/', walkInData);
+        return response.data;
+    },
+
+    getWalkInById: async (id) => {
+        const response = await api.get(`/booking/walk-ins/${id}/`);
+        return response.data;
+    },
+
+    updateWalkIn: async (id, walkInData) => {
+        const response = await api.put(`/booking/walk-ins/${id}/`, walkInData);
+        return response.data;
+    },
+
+    partialUpdateWalkIn: async (id, walkInData) => {
+        const response = await api.patch(`/booking/walk-ins/${id}/`, walkInData);
+        return response.data;
+    },
+
+    deleteWalkIn: async (id) => {
+        const response = await api.delete(`/booking/walk-ins/${id}/`);
+        return response.data;
+    },
+
+    // Addons
+    getAddons: async () => {
+        const response = await api.get('/booking/addons/');
+        return response.data;
+    },
+
+    createAddon: async (addonData) => {
+        const response = await api.post('/booking/addons/', addonData);
+        return response.data;
+    },
+
+    getAddonById: async (id) => {
+        const response = await api.get(`/booking/addons/${id}/`);
+        return response.data;
+    },
+
+    updateAddon: async (id, addonData) => {
+        const response = await api.put(`/booking/addons/${id}/`, addonData);
+        return response.data;
+    },
+
+    partialUpdateAddon: async (id, addonData) => {
+        const response = await api.patch(`/booking/addons/${id}/`, addonData);
+        return response.data;
+    },
+
+    deleteAddon: async (id) => {
+        const response = await api.delete(`/booking/addons/${id}/`);
         return response.data;
     }
 };
