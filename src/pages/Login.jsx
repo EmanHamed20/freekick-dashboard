@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth.js';
+import { toast } from 'react-toastify';
 import { Eye, EyeOff } from 'lucide-react';
 import { MdPhoneInTalk } from "react-icons/md";
 import { TbLockPassword } from "react-icons/tb";
@@ -9,48 +10,48 @@ import LogoText from "../components/common/LogoText.jsx";
 import LogoLoader from "../components/common/LogoLoader.jsx";
 
 const Login = () => {
-    const [phone, setPhone] = useState('');
-    const [password, setPassword] = useState('');
+    const [formData, setFormData] = useState({
+        phone: '',
+        password: ''
+    });
     const [showPassword, setShowPassword] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
-    const { login, isAuthenticated, isLoading, error } = useAuth();
+    const { login, isAuthenticated, isLoading, error, resetError } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
 
-    // Get the intended destination or default to dashboard
     const from = location.state?.from?.pathname || '/';
 
+    // Handle successful authentication
     useEffect(() => {
         if (isAuthenticated) {
-            // Keep showing loader during navigation
             setIsSubmitting(true);
+            toast.success('Login successful! Redirecting...', {
+                position: "top-right",
+                autoClose: 2000,
+            });
             navigate(from, { replace: true });
         }
     }, [isAuthenticated, navigate, from]);
 
-    // Reset submitting state if there's an error
+    // Handle authentication errors
     useEffect(() => {
         if (error && !isLoading) {
             setIsSubmitting(false);
+            toast.error(error.message || 'Login failed. Please check your credentials.', {
+                position: "top-right",
+                autoClose: 4000,
+            });
+            resetError();
         }
-    }, [error, isLoading]);
-
-    const handleSubmit = (e) => {
-        e.preventDefault();
-        setIsSubmitting(true);
-        login(phone, password);
-    };
+    }, [error, isLoading, resetError]);
 
     const formatPhoneNumber = (value) => {
-        // Remove all non-digit and non-plus characters
         const cleaned = value.replace(/[^\d+]/g, '');
-
-        // If it starts with +, preserve it
         const hasPlus = cleaned.startsWith('+');
         const digits = hasPlus ? cleaned.slice(1) : cleaned;
 
-        // Format based on length
         if (digits.length <= 3) {
             return hasPlus ? `+${digits}` : digits;
         } else if (digits.length <= 5) {
@@ -62,9 +63,30 @@ const Login = () => {
         }
     };
 
-    const handlePhoneChange = (e) => {
-        const formatted = formatPhoneNumber(e.target.value);
-        setPhone(formatted);
+    const handleInputChange = (field, value) => {
+        if (field === 'phone') {
+            value = formatPhoneNumber(value);
+        }
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+
+        if (!formData.phone || !formData.password) {
+            toast.warning('Please fill in all fields', {
+                position: "top-right",
+                autoClose: 3000,
+            });
+            return;
+        }
+
+        setIsSubmitting(true);
+        login(formData.phone, formData.password);
+    };
+
+    const togglePasswordVisibility = () => {
+        setShowPassword(prev => !prev);
     };
 
     return (
@@ -85,7 +107,7 @@ const Login = () => {
                 <div className="absolute bottom-1/3 left-1/4 w-40 h-40 bg-white/5 rounded-full animate-float-slowest"></div>
             </div>
 
-            {/* Login Form Container - Apply blur when submitting */}
+            {/* Login Form Container */}
             <div className={`max-w-md w-full space-y-8 relative z-10 transition-all duration-300 ${
                 isSubmitting ? 'blur-sm scale-95 opacity-80' : 'blur-0 scale-100 opacity-100'
             }`}>
@@ -114,8 +136,8 @@ const Login = () => {
                                     name="phone"
                                     type="text"
                                     required
-                                    value={phone}
-                                    onChange={handlePhoneChange}
+                                    value={formData.phone}
+                                    onChange={(e) => handleInputChange('phone', e.target.value)}
                                     placeholder="Your phone number"
                                     className="block w-full pl-12 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                                     disabled={isSubmitting}
@@ -134,8 +156,8 @@ const Login = () => {
                                     name="password"
                                     type={showPassword ? 'text' : 'password'}
                                     required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    value={formData.password}
+                                    onChange={(e) => handleInputChange('password', e.target.value)}
                                     placeholder="Your password"
                                     className="block w-full pl-12 pr-12 py-3.5 bg-white border border-slate-200 rounded-xl text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                                     disabled={isSubmitting}
@@ -143,8 +165,9 @@ const Login = () => {
                                 <button
                                     type="button"
                                     className="absolute inset-y-0 right-0 pr-4 flex items-center"
-                                    onClick={() => setShowPassword(!showPassword)}
+                                    onClick={togglePasswordVisibility}
                                     disabled={isSubmitting}
+                                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                                 >
                                     {showPassword ? (
                                         <EyeOff className="h-5 w-5 text-slate-400 hover:text-slate-600" />
@@ -154,13 +177,6 @@ const Login = () => {
                                 </button>
                             </div>
                         </div>
-
-                        {/* Error Message */}
-                        {error && (
-                            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
-                                {error.message || 'Login failed. Please check your credentials.'}
-                            </div>
-                        )}
 
                         {/* Login Button */}
                         <button

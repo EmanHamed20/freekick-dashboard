@@ -26,6 +26,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import logo from '../../assets/logo.svg';
 import ScrollArea from '../common/ScrollArea.jsx';
+import { FaCalendarAlt } from "react-icons/fa";
 
 const Sidebar = ({ onToggle }) => {
     const location = useLocation();
@@ -52,7 +53,7 @@ const Sidebar = ({ onToggle }) => {
         {
             title: t('sections.sales_control'),
             items: [
-                { icon: Calendar, label: t('menu_items.booking'), path: '/bookings' },
+                { icon: FaCalendarAlt , label: t('menu_items.booking'), path: '/bookings' },
                 { icon: Calendar, label: t('menu_items.calendar'), path: '/calendar' },
                 { icon: MapPin, label: t('menu_items.venues'), path: '/venues' },
                 { icon: Landmark, label: t('menu_items.pitches'), path: '/pitches' },
@@ -152,10 +153,27 @@ const Sidebar = ({ onToggle }) => {
                     {!isCollapsed && (
                         <button
                             onClick={handleToggle}
-                            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 group relative"
                             title={t('tooltips.collapse_sidebar')}
                         >
-                            <ToggleIcon className="w-5 h-5 text-gray-600" />
+                            {/* Soccer Ball */}
+                            <div className="relative w-5 h-5">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    className="w-5 h-5 text-gray-600 group-hover:text-primary-600 transition-all duration-300 group-hover:scale-110"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                >
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M12 2 L12 6 M12 18 L12 22 M2 12 L6 12 M18 12 L22 12" strokeWidth="1.5" opacity="0.4" />
+                                    <path d="M12 8 L9 10 L10 13 L14 13 L15 10 Z" fill="currentColor" opacity="0.2" />
+                                </svg>
+                                {/* Kick motion indicator */}
+                                <div className={`absolute ${direction === 'rtl' ? 'right-0' : 'left-0'} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300`}>
+                                    <ToggleIcon className="w-3 h-3 text-primary-600" />
+                                </div>
+                            </div>
                         </button>
                     )}
                 </div>
@@ -221,10 +239,26 @@ const Sidebar = ({ onToggle }) => {
                     <div className="p-3 border-t border-gray-100 flex-shrink-0">
                         <button
                             onClick={handleToggle}
-                            className="w-full p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex justify-center"
+                            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 group relative"
                             title={t('tooltips.expand_sidebar')}
                         >
-                            <ToggleIcon className="w-5 h-5 text-gray-600" />
+                            <div className="relative w-5 h-5">
+                                <svg
+                                    viewBox="0 0 24 24"
+                                    className="w-5 h-5 text-gray-600 group-hover:text-primary-600 transition-all duration-300 group-hover:scale-110"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                >
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M12 2 L12 6 M12 18 L12 22 M2 12 L6 12 M18 12 L22 12" strokeWidth="1.5" opacity="0.4" />
+                                    <path d="M12 8 L9 10 L10 13 L14 13 L15 10 Z" fill="currentColor" opacity="0.2" />
+                                </svg>
+                                {/* Kick motion indicator */}
+                                <div className={`absolute ${direction === 'ltr' ? 'right-0' : 'left-0'} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-300`}>
+                                    <ToggleIcon className="w-3 h-3 text-primary-600" />
+                                </div>
+                            </div>
                         </button>
                     </div>
                 )}
