@@ -11,15 +11,14 @@ function AppContent() {
     const { authCheckCompleted } = useSelector((state) => state.auth);
 
     useEffect(() => {
-        console.log('🚀 App: Checking auth on mount');
         dispatch(checkAuth());
     }, [dispatch]);
 
-    // Show loader until initial auth check completes
+    // Show a global loader until auth check completes
     if (!authCheckCompleted) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <LogoLoader/>
+                <LogoLoader />
             </div>
         );
     }
