@@ -181,7 +181,7 @@ const MainTable = ({
                             ...muiInputStyles,
                             width: { xs: '100%', md: 280 }
                         }}
-                        className="text-secondary-600"
+                        className="text-secondary-600 w-full"
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
