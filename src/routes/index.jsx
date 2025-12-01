@@ -12,6 +12,7 @@ import Amenities from '../pages/Amenities/Amenities';
 import Support from '../pages/Support/Support';
 import SurfaceTypes from '../pages/SurfaceTypes/SurfaceTypes.jsx';
 import AddOns from '../pages/AddOns/AddOns.jsx';
+import VenueSports from '../pages/VenueSports/VenueSports.jsx';
 // import Tournaments from '../pages/Tournaments/Tournaments';
 import Tickets from '../pages/Tickets/Tickets.jsx';
 // import Revenue from '../pages/Revenue/Revenue';
@@ -81,6 +82,10 @@ const router = createBrowserRouter([
             {
                 path: 'add-ons',
                 element: <AddOns />,
+            },
+            {
+                path: 'venue-sports',
+                element: <VenueSports />,
             },
             {
                 path: 'tournaments',
