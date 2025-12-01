@@ -37,7 +37,7 @@ const Pitches = () => {
     });
 
     // View State - To switch between different pitch status views
-    const [currentView, setCurrentView] = useState('all'); // 'all', 'approved', 'rejected', 'pending'
+    const [currentView, setCurrentView] = useState('all');
 
     // Fetch Data
     const fetchPitchesData = async () => {
@@ -258,69 +258,67 @@ const Pitches = () => {
         return pitchesData.filter(pitch => !pitch.is_active);
     }, [pitchesData]);
 
-    // --- ACTION BUTTONS (Simplified - No status change buttons) ---
+    // --- ACTION BUTTONS (Responsive) ---
     const ActionButtons = ({ pitch }) => (
-        <div className="flex justify-center items-center gap-2">
+        <div className="flex justify-center items-center gap-1 sm:gap-2">
             <button
                 className="text-gray-500 hover:text-teal-600 p-1 rounded transition-colors hover:bg-gray-50"
                 title="View Pitch"
             >
-                <Eye size={18} />
+                <Eye size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
             <button
                 className="text-gray-500 hover:text-blue-600 p-1 rounded transition-colors hover:bg-gray-50"
                 title="Edit Pitch"
                 onClick={() => handleEditPitch(pitch)}
             >
-                <Pencil size={18} />
+                <Pencil size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
             <button
                 className="text-gray-500 hover:text-red-600 p-1 rounded transition-colors hover:bg-gray-50"
                 onClick={() => handleDeletePitch(pitch.id, pitch.translations?.name || `Pitch ${pitch.id}`)}
                 title="Delete Pitch"
             >
-                <Trash2 size={18} />
+                <Trash2 size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
         </div>
     );
 
-    // Status Management Section Component
-    // Status Management Section Component
+    // Status Management Section Component (Fully Responsive)
     const StatusManagementSection = ({ title, pitches, statusType, emptyMessage }) => (
-        <div className="bg-gradient-to-br from-white to-primary-50/30 rounded-lg w-full shadow-md border border-primary-100 mb-6 overflow-hidden">
-            <div className="px-4 py-3 border-b border-primary-100 bg-gradient-to-r from-primary-50 to-white">
-                <div className="flex items-center justify-between ">
-                    <div className="flex items-center gap-2 ">
+        <div className="bg-gradient-to-br from-white to-primary-50/30 rounded-lg w-full shadow-md border border-primary-100 mb-4 sm:mb-6 overflow-hidden">
+            <div className="px-3 sm:px-4 py-2.5 sm:py-3 border-b border-primary-100 bg-gradient-to-r from-primary-50 to-white">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
                         <div className={`p-1.5 rounded-lg ${
                             statusType === 'approved' ? 'bg-primary-100' :
                                 statusType === 'rejected' ? 'bg-red-50' : 'bg-orange-50'
                         }`}>
-                            {statusType === 'approved' ? <CheckCircle className="w-4 h-4 text-primary-600" /> :
-                                statusType === 'rejected' ? <XCircle className="w-4 h-4 text-red-500" /> :
-                                    <Clock className="w-4 h-4 text-orange-500" />}
+                            {statusType === 'approved' ? <CheckCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-primary-600" /> :
+                                statusType === 'rejected' ? <XCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-red-500" /> :
+                                    <Clock className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />}
                         </div>
                         <div>
-                            <h2 className="text-base font-bold text-secondary-600">{title}</h2>
+                            <h2 className="text-sm sm:text-base font-bold text-secondary-600">{title}</h2>
                             <p className="text-xs text-gray-600">
                                 {pitches.length} {pitches.length === 1 ? 'pitch' : 'pitches'}
                             </p>
                         </div>
                     </div>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                    <span className={`px-2 sm:px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                         statusType === 'approved' ? 'bg-primary-100 text-primary-700' :
                             statusType === 'rejected' ? 'bg-red-100 text-red-600' :
                                 'bg-orange-100 text-orange-600'
                     }`}>
-                    {statusType === 'approved' ? 'Approved' : statusType === 'rejected' ? 'Rejected' : 'Pending'}
-                </span>
+                        {statusType === 'approved' ? 'Approved' : statusType === 'rejected' ? 'Rejected' : 'Pending'}
+                    </span>
                 </div>
             </div>
 
             {pitches.length > 0 ? (
-                <div className="px-4 py-3 max-h-64 h-auto custom-scrollbar overflow-auto">
-                    {/* Scrollable container */}
+                <div className="px-3 sm:px-4 py-2.5 sm:py-3 max-h-64 h-auto custom-scrollbar overflow-auto">
                     <div
-                        className="space-y-2.5  h-auto overflow-y-auto pr-2"
+                        className="space-y-2 sm:space-y-2.5 h-auto overflow-y-auto pr-1 sm:pr-2"
                         style={{
                             scrollbarWidth: 'thin',
                             scrollbarColor: '#cbd5e1 transparent'
@@ -329,67 +327,70 @@ const Pitches = () => {
                         {pitches.map((pitch) => (
                             <div
                                 key={pitch.id}
-                                className="bg-white rounded-lg border border-primary-100 p-3 hover:shadow-md hover:border-primary-300 transition-all duration-200"
+                                className="bg-white rounded-lg border border-primary-100 p-2.5 sm:p-3 hover:shadow-md hover:border-primary-300 transition-all duration-200"
                             >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center space-x-3 flex-1">
-                                        <div className="w-11 h-11 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-sm">
-                                            <span className="text-base font-bold text-white">{pitch.size}</span>
+                                <div className="flex items-start sm:items-center justify-between flex-col sm:flex-row gap-2 sm:gap-0">
+                                    <div className="flex items-center space-x-2 sm:space-x-3 flex-1 w-full sm:w-auto">
+                                        <div className="w-9 h-9 sm:w-11 sm:h-11 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
+                                            <span className="text-sm sm:text-base font-bold text-white">{pitch.size}</span>
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-0.5">
-                                            <span className="font-semibold text-secondary-600 text-sm">
-                                                {pitch.translations?.name || `Pitch ${pitch.id}`}
-                                            </span>
-                                                <span className="px-2 py-0.5 bg-primary-50 text-primary-700 rounded text-xs font-medium">
-                                                {pitch.size} a side
-                                            </span>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5 sm:gap-2 mb-0.5 flex-wrap">
+                                                <span className="font-semibold text-secondary-600 text-xs sm:text-sm truncate">
+                                                    {pitch.translations?.name || `Pitch ${pitch.id}`}
+                                                </span>
+                                                <span className="px-1.5 sm:px-2 py-0.5 bg-primary-50 text-primary-700 rounded text-xs font-medium whitespace-nowrap">
+                                                    {pitch.size} a side
+                                                </span>
                                             </div>
-                                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                                            <span className="flex items-center gap-1">
-                                                <span className="font-medium">ID:</span> #{pitch.id}
-                                            </span>
-                                                <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                <span className="flex items-center gap-1">
-                                                <span className="font-medium">Venue:</span> #{pitch.venue}
-                                            </span>
-                                                <span className="w-1 h-1 bg-gray-300 rounded-full"></span>
-                                                <span className="flex items-center gap-1">
-                                                <span className="font-medium">Price:</span> AED {parseFloat(pitch.price_per_hour || 0).toLocaleString()}/hr
-                                            </span>
+                                            <div className="flex items-center gap-1.5 sm:gap-2 text-xs text-gray-500 flex-wrap">
+                                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                                    <span className="font-medium">ID:</span> #{pitch.id}
+                                                </span>
+                                                <span className="w-1 h-1 bg-gray-300 rounded-full hidden sm:block"></span>
+                                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                                    <span className="font-medium">Venue:</span> #{pitch.venue}
+                                                </span>
+                                                <span className="w-1 h-1 bg-gray-300 rounded-full hidden sm:block"></span>
+                                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                                    <span className="font-medium">Price:</span> AED {parseFloat(pitch.price_per_hour || 0).toLocaleString()}/hr
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-2 ml-3">
-                                        <div className="text-right">
+                                    <div className="flex items-center gap-2 w-full sm:w-auto sm:ml-3 justify-between sm:justify-end">
+                                        <div className="text-left sm:text-right">
                                             <StatusBadge isActive={pitch.is_active} />
                                         </div>
                                         <div className="flex gap-1.5">
                                             {statusType === 'pending' && (
                                                 <button
-                                                    className="flex items-center gap-1.5 bg-primary-500 hover:bg-primary-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
+                                                    className="flex items-center gap-1 sm:gap-1.5 bg-primary-500 hover:bg-primary-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md whitespace-nowrap"
                                                     onClick={() => handleApprovePitch(pitch)}
                                                 >
-                                                    <CheckCircle size={14} />
-                                                    Approve
+                                                    <CheckCircle size={12} className="sm:w-3.5 sm:h-3.5" />
+                                                    <span className="hidden sm:inline">Approve</span>
+                                                    <span className="sm:hidden">✓</span>
                                                 </button>
                                             )}
                                             {statusType === 'approved' && (
                                                 <button
-                                                    className="flex items-center gap-1.5 bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
+                                                    className="flex items-center gap-1 sm:gap-1.5 bg-red-500 hover:bg-red-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md whitespace-nowrap"
                                                     onClick={() => handleRejectPitch(pitch)}
                                                 >
-                                                    <XCircle size={14} />
-                                                    Reject
+                                                    <XCircle size={12} className="sm:w-3.5 sm:h-3.5" />
+                                                    <span className="hidden sm:inline">Reject</span>
+                                                    <span className="sm:hidden">✕</span>
                                                 </button>
                                             )}
                                             {statusType === 'rejected' && (
                                                 <button
-                                                    className="flex items-center gap-1.5 bg-primary-500 hover:bg-primary-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md"
+                                                    className="flex items-center gap-1 sm:gap-1.5 bg-primary-500 hover:bg-primary-600 text-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-semibold transition-all duration-200 shadow-sm hover:shadow-md whitespace-nowrap"
                                                     onClick={() => handleApprovePitch(pitch)}
                                                 >
-                                                    <CheckCircle size={14} />
-                                                    Approve
+                                                    <CheckCircle size={12} className="sm:w-3.5 sm:h-3.5" />
+                                                    <span className="hidden sm:inline">Approve</span>
+                                                    <span className="sm:hidden">✓</span>
                                                 </button>
                                             )}
                                         </div>
@@ -400,15 +401,12 @@ const Pitches = () => {
                     </div>
                 </div>
             ) : (
-                <div className="p-6 text-center text-gray-500 text-sm">
+                <div className="p-4 sm:p-6 text-center text-gray-500 text-xs sm:text-sm">
                     {emptyMessage}
                 </div>
             )}
-
-           
         </div>
     );
-
 
     // Filter Config
     const filterConfig = [
@@ -446,15 +444,15 @@ const Pitches = () => {
             accessor: 'id',
             render: (row) => (
                 <div className="font-medium text-gray-900">
-                    <div>{row.translations?.name || `Pitch ${row.id}`}</div>
-                    <div className="text-sm text-gray-500">#{row.id}</div>
+                    <div className="text-xs sm:text-sm">{row.translations?.name || `Pitch ${row.id}`}</div>
+                    <div className="text-xs text-gray-500">#{row.id}</div>
                 </div>
             )
         },
         {
             header: 'Venue',
             accessor: 'venue',
-            render: (row) => <span className="text-gray-700">Venue #{row.venue}</span>
+            render: (row) => <span className="text-gray-700 text-xs sm:text-sm">Venue #{row.venue}</span>
         },
         {
             header: 'Status',
@@ -465,12 +463,12 @@ const Pitches = () => {
         {
             header: 'Type',
             accessor: 'size',
-            render: (row) => <span className="text-gray-700">{row.size} a side</span>
+            render: (row) => <span className="text-gray-700 text-xs sm:text-sm">{row.size} a side</span>
         },
         {
             header: 'Pricing/hour',
             accessor: 'price_per_hour',
-            render: (row) => <span className="font-medium text-gray-900">AED {parseFloat(row.price_per_hour || 0).toLocaleString()}</span>
+            render: (row) => <span className="font-medium text-gray-900 text-xs sm:text-sm">AED {parseFloat(row.price_per_hour || 0).toLocaleString()}</span>
         },
         {
             header: 'Quick Actions',
@@ -487,10 +485,10 @@ const Pitches = () => {
         }
     ];
 
-    // View Tabs Component
+    // View Tabs Component (Fully Responsive)
     const ViewTabs = () => (
-        <div className="bg-gradient-to-br from-white to-primary-50/30 rounded-lg shadow-sm border border-primary-100 p-1.5 mt-5 mb-6">
-            <div className="flex space-x-1">
+        <div className="bg-gradient-to-br from-white to-primary-50/30 rounded-lg shadow-sm border border-primary-100 p-1 sm:p-1.5 mt-4 sm:mt-5 mb-4 sm:mb-6">
+            <div className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-1">
                 {[
                     { key: 'all', label: 'All Pitches', count: stats.total },
                     { key: 'approved', label: 'Approved', count: stats.active },
@@ -499,25 +497,26 @@ const Pitches = () => {
                     <button
                         key={tab.key}
                         onClick={() => handleViewChange(tab.key)}
-                        className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg font-semibold text-xs transition-all duration-200 ${
+                        className={`flex-1 flex items-center justify-center gap-2 px-2 sm:px-3 py-2 rounded-lg font-semibold text-xs transition-all duration-200 ${
                             currentView === tab.key
                                 ? 'bg-gradient-to-r from-primary-500 to-primary-600 text-white shadow-md'
                                 : 'text-gray-600 hover:text-secondary-600 hover:bg-primary-50'
                         }`}
                     >
-                        {tab.label}
-                        <span className={`px-2 py-0.5 rounded-full text-xs ${
+                        <span className="truncate">{tab.label}</span>
+                        <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-xs ${
                             currentView === tab.key
                                 ? 'bg-primary-700 text-white'
                                 : 'bg-gray-200 text-gray-600'
                         }`}>
-                        {tab.count}
-                    </span>
+                            {tab.count}
+                        </span>
                     </button>
                 ))}
             </div>
         </div>
     );
+
     // PREPARE PITCHES LIST FOR DROPDOWN
     const formattedPitchesList = useMemo(() => {
         return pitchesData.map(pitch => ({
@@ -526,59 +525,58 @@ const Pitches = () => {
         }));
     }, [pitchesData]);
 
+    // Responsive Stat Card
     const StatCard = ({ title, value, icon, gradient, bgColor }) => (
-        <div className="bg-white rounded-2xl shadow-lg border border-gray-200 p-6 hover:shadow-xl transition-all duration-300 transform hover:scale-105">
-            <div className="flex items-center justify-between mb-4">
-                <div className={`p-3 ${bgColor} rounded-xl`}>
-                    {icon}
+        <div className="bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <div className={`p-2 sm:p-3 ${bgColor} rounded-lg sm:rounded-xl`}>
+                    {React.cloneElement(icon, { className: "w-5 h-5 sm:w-7 sm:h-7" })}
                 </div>
-                <div className={`w-16 h-1 bg-gradient-to-r ${gradient} rounded-full`}></div>
+                <div className={`w-12 sm:w-16 h-1 bg-gradient-to-r ${gradient} rounded-full`}></div>
             </div>
             <div>
-                <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-2">{title}</p>
-                <p className="text-4xl font-bold text-gray-900">{value}</p>
+                <p className="text-xs sm:text-sm font-semibold text-gray-600 uppercase tracking-wide mb-1 sm:mb-2">{title}</p>
+                <p className="text-2xl sm:text-4xl font-bold text-gray-900">{value}</p>
             </div>
         </div>
     );
 
     return (
-        <div className="w-full">
+        <div className="w-full px-2 sm:px-0">
             {/* Statistics Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 my-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 my-4 sm:my-8">
                 <StatCard
                     title="Total Pitches"
                     value={stats.total}
-                    icon={<TrendingUp className="w-7 h-7 text-blue-600" />}
+                    icon={<TrendingUp className="text-blue-600" />}
                     gradient="from-blue-500 to-blue-600"
                     bgColor="bg-blue-50"
                 />
                 <StatCard
                     title="Active Pitches"
                     value={stats.active}
-                    icon={<CheckCircle className="w-7 h-7 text-green-600" />}
+                    icon={<CheckCircle className="text-green-600" />}
                     gradient="from-green-500 to-green-600"
                     bgColor="bg-green-50"
                 />
                 <StatCard
                     title="Inactive Pitches"
                     value={stats.inactive}
-                    icon={<XCircle className="w-7 h-7 text-red-600" />}
+                    icon={<XCircle className="text-red-600" />}
                     gradient="from-red-500 to-red-600"
                     bgColor="bg-red-50"
                 />
                 <StatCard
                     title="Pending Approval"
                     value={stats.pending}
-                    icon={<Clock className="w-7 h-7 text-orange-600" />}
+                    icon={<Clock className="text-orange-600" />}
                     gradient="from-orange-500 to-orange-600"
                     bgColor="bg-orange-50"
                 />
             </div>
 
             {/* Status Management Sections */}
-            <div className="gap-8 flex  ">
-
-
+            <div className="flex flex-col lg:flex-row gap-4 sm:gap-8">
                 <StatusManagementSection
                     title="Approved Pitches"
                     pitches={approvedPitches}
@@ -596,7 +594,7 @@ const Pitches = () => {
 
             {/* Form Section */}
             {showForm && (
-                <div className='mb-8'>
+                <div className='mb-6 sm:mb-8'>
                     <PitchesForm
                         venuesData={venuesData}
                         pitchesList={formattedPitchesList}
@@ -612,7 +610,7 @@ const Pitches = () => {
 
             {/* Main Table Section */}
             {isLoading && pitchesData.length === 0 ? (
-                <div className="p-10 text-center text-gray-500">Loading...</div>
+                <div className="p-6 sm:p-10 text-center text-gray-500 text-sm sm:text-base">Loading...</div>
             ) : (
                 <MainTable
                     data={filteredData || []}
@@ -637,7 +635,7 @@ const StatusBadge = ({ isActive }) => {
         ? 'bg-green-100 text-green-800 border border-green-200'
         : 'bg-red-100 text-red-800 border border-red-200';
     return (
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${style}`}>
+        <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium ${style} whitespace-nowrap`}>
             {isActive ? 'Active' : 'Inactive'}
         </span>
     );
