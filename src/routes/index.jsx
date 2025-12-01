@@ -11,6 +11,7 @@ import Pitches from '../pages/Pitches/Pitches';
 import Amenities from '../pages/Amenities/Amenities';
 import Support from '../pages/Support/Support';
 import SurfaceTypes from '../pages/SurfaceTypes/SurfaceTypes.jsx';
+import AddOns from '../pages/AddOns/AddOns.jsx';
 // import Tournaments from '../pages/Tournaments/Tournaments';
 import Tickets from '../pages/Tickets/Tickets.jsx';
 // import Revenue from '../pages/Revenue/Revenue';
@@ -76,6 +77,10 @@ const router = createBrowserRouter([
             {
                 path: 'surface-types',
                 element: <SurfaceTypes />,
+            },
+            {
+                path: 'add-ons',
+                element: <AddOns />,
             },
             {
                 path: 'tournaments',
