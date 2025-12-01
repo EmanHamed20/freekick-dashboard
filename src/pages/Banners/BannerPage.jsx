@@ -1,0 +1,318 @@
+import React, { useEffect, useState } from 'react';
+import { useBanners } from '../../hooks/useBanners';
+import BannerSlider from '../../components/banners/BannerSlider.jsx';
+import MainTable from '../../components/MainTable';
+import BannerForm from '../../components/banners/BannerForm.jsx';
+import { Edit2, Trash2 } from 'lucide-react';
+import { toast } from 'react-toastify';
+
+const BannerPage = () => {
+    const {
+        banners,
+        loading,
+        error,
+        currentBanner,
+        getBanners,
+        getBanner,
+        addBanner,
+        editBanner,
+        removeBanner,
+        clearBanner,
+    } = useBanners();
+
+    const [viewMode, setViewMode] = useState('slider'); // 'slider', 'list', 'form'
+    const [editingBanner, setEditingBanner] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [sortConfig, setSortConfig] = useState({ key: 'id', direction: 'desc' });
+    const [filters, setFilters] = useState({});
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const itemsPerPage = 10;
+
+    useEffect(() => {
+        getBanners({
+            search: searchTerm || undefined,
+            type: filters.type || undefined,
+        });
+    }, [searchTerm, filters]);
+
+    const handleCreate = () => {
+        setEditingBanner(null);
+        setViewMode('form');
+    };
+
+    const handleEdit = (banner) => {
+        setEditingBanner(banner);
+        setViewMode('form');
+    };
+
+    const handleDelete = async (id) => {
+        if (window.confirm('Are you sure you want to delete this banner?')) {
+            await removeBanner(id);
+        }
+    };
+
+    const handleFormSubmit = async (formData) => {
+        try {
+            const submitData = {
+                image: formData.image,
+                type: formData.type,
+                value: formData.value,
+                is_active: formData.is_active
+            };
+
+            if (editingBanner) {
+                await editBanner(editingBanner.id, submitData);
+                toast.success('Banner updated successfully');
+            } else {
+                await addBanner(submitData);
+                toast.success('Banner created successfully');
+            }
+
+            setViewMode('list'); // Go back to list view after successful save
+            setEditingBanner(null);
+            clearBanner();
+        } catch (error) {
+            toast.error('Failed to save banner');
+        }
+    };
+
+    const handleFormCancel = () => {
+        setViewMode('list');
+        setEditingBanner(null);
+    };
+
+    const handleBannerClick = (banner) => {
+        switch (banner.type) {
+            case 'link':
+                window.open(banner.value, '_blank');
+                break;
+            case 'venue':
+                console.log('Navigate to venue:', banner.value);
+                break;
+            case 'tournaments':
+                console.log('Navigate to tournament:', banner.value);
+                break;
+            default:
+                break;
+        }
+    };
+
+    // Table columns configuration
+    const columns = [
+        {
+            header: 'ID',
+            accessor: 'id',
+            align: 'left',
+            sortable: true,
+            sortKey: 'id',
+            render: (row) => <span className="font-semibold">#{row.id}</span>
+        },
+        {
+            header: 'Image',
+            accessor: 'image',
+            align: 'left',
+            render: (row) => (
+                <img
+                    src={row.image}
+                    alt={`Banner ${row.id}`}
+                    className="w-20 h-12 object-cover rounded"
+                    onError={(e) => {
+                        e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="48"><rect fill="%234F46E5" width="80" height="48"/><text x="50%" y="50%" fill="white" font-size="12" text-anchor="middle" dy=".3em">IMG</text></svg>';
+                    }}
+                />
+            )
+        },
+        {
+            header: 'Type',
+            accessor: 'type',
+            align: 'left',
+            sortable: true,
+            sortKey: 'type',
+            render: (row) => (
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    row.type === 'venue' ? 'bg-purple-100 text-purple-800' :
+                        row.type === 'link' ? 'bg-blue-100 text-blue-800' :
+                            row.type === 'tournaments' ? 'bg-green-100 text-green-800' :
+                                'bg-gray-100 text-gray-800'
+                }`}>
+                    {row.type}
+                </span>
+            )
+        },
+        {
+            header: 'Value',
+            accessor: 'value',
+            align: 'left',
+            render: (row) => (
+                <span className="text-sm text-gray-600 max-w-md truncate block">
+                    {row.value}
+                </span>
+            )
+        },
+        {
+            header: 'Status',
+            accessor: 'is_active',
+            align: 'center',
+            sortable: true,
+            sortKey: 'is_active',
+            render: (row) => (
+                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                    row.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                }`}>
+                    {row.is_active ? 'Active' : 'Inactive'}
+                </span>
+            )
+        },
+        {
+            header: 'Quick Actions',
+            accessor: 'actions',
+            align: 'center',
+            render: (row) => (
+                <div className="flex items-center justify-center gap-2">
+                    <button
+                        onClick={() => handleEdit(row)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        title="Edit"
+                    >
+                        <Edit2 size={16} />
+                    </button>
+                    <button
+                        onClick={() => handleDelete(row.id)}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Delete"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                </div>
+            )
+        }
+    ];
+
+    // Filter configuration
+    const tableFilters = [
+        {
+            type: 'select',
+            label: 'Type',
+            key: 'type',
+            options: [
+                { label: 'Venue', value: 'venue' },
+                { label: 'Text', value: 'text' },
+                { label: 'Link', value: 'link' },
+                { label: 'Tournaments', value: 'tournaments' }
+            ]
+        }
+    ];
+
+    // Top actions for table view
+    const topActions = [
+        {
+            label: '+ Create Banner',
+            type: 'primary',
+            onClick: handleCreate
+        }
+    ];
+
+    // Render content based on view mode
+    const renderContent = () => {
+        switch (viewMode) {
+            case 'form':
+                return (
+                    <div className="min-h-screen bg-gray-50">
+                        <div className="container mx-auto px-6 py-6">
+                            <div className="bg-white rounded-lg p-6 shadow-sm">
+                                <BannerForm
+                                    editingBanner={editingBanner}
+                                    onSubmit={handleFormSubmit}
+                                    onCancel={handleFormCancel}
+                                    isLoading={loading}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case 'list':
+                return (
+                    <div className="min-h-screen bg-gray-50">
+                        <div className="container mx-auto px-6">
+                            <div className="flex items-center justify-between mb-6 mt-6">
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-800">
+                                        Manage all banners and advertisements
+                                    </h1>
+                                    <p className="text-gray-600 mt-1">
+                                        Showing all {banners.length} banners
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setViewMode('slider')}
+                                    className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                >
+                                    ← Back to Banners
+                                </button>
+                            </div>
+
+                            <MainTable
+                                columns={columns}
+                                data={banners}
+                                searchPlaceholder="Search banners..."
+                                filters={tableFilters}
+                                currentPage={currentPage}
+                                itemsPerPage={itemsPerPage}
+                                onSearch={setSearchTerm}
+                                onFilterChange={setFilters}
+                                onPageChange={setCurrentPage}
+                                topActions={topActions}
+                                sortConfig={sortConfig}
+                                onSort={(key) => {
+                                    setSortConfig(prev => ({
+                                        key,
+                                        direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+                                    }));
+                                }}
+                            />
+                        </div>
+                    </div>
+                );
+
+            case 'slider':
+            default:
+                return (
+                    <div className="min-h-screen bg-gray-50">
+                        {/* Banner Slider Section */}
+                        <div className="bg-white border-b">
+                            <div className="container mx-auto px-6 py-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-xl font-bold text-gray-800">Uploaded Banners</h2>
+                                    <button
+                                        onClick={() => setViewMode('list')}
+                                        className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                                    >
+                                        See all
+                                    </button>
+                                </div>
+
+                                <BannerSlider
+                                    banners={banners.filter(b => b.is_active)}
+                                    onBannerClick={handleBannerClick}
+                                />
+
+                                <button
+                                    onClick={handleCreate}
+                                    className="w-full mt-8 bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <span className="text-xl">+</span>
+                                    Upload New Banner
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+        }
+    };
+
+    return renderContent();
+};
+
+export default BannerPage;

@@ -13,6 +13,8 @@ import { usePrint } from '../../hooks/usePrint';
 import PrintableReceipt from '../../components/features/Bookings/PrintableReceipt.jsx';
 import {useDispatch, useSelector} from "react-redux";
 import {  clearCancelStatus } from "../../features/bookings/bookingSlice";
+import { showConfirm } from "../../components/showConfirm.jsx";
+import {toast} from "react-toastify";
 
 const BookingDetailView = ({ booking: initialBooking, onBack, onRefresh }) => {
     const bookingId = initialBooking?.id;
@@ -99,17 +101,25 @@ const BookingDetailView = ({ booking: initialBooking, onBack, onRefresh }) => {
     };
 
     const handleCancel = async () => {
-        if (window.confirm('Are you sure you want to cancel this booking?')) {
-            try {
+        try {
+            const confirmed = await showConfirm({
+                title: "Cancel Booking",
+                text: "Are you sure you want to cancel this booking? This action cannot be undone.",
+                confirmButtonText: "Yes, cancel booking",
+                cancelButtonText: "Keep booking",
+                icon: "warning"
+            });
+
+            if (confirmed) {
                 setIsActionLoading(true);
                 await bookingService.cancelBooking(booking.id);
                 if (onRefresh) onRefresh();
                 if (onBack) onBack();
-            } catch (err) {
-                alert('Failed to cancel booking: ' + err.message);
-            } finally {
-                setIsActionLoading(false);
             }
+        } catch (err) {
+            toast.error('Failed to cancel booking: ' + err.message);
+        } finally {
+            setIsActionLoading(false);
         }
     };
 

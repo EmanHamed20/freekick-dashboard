@@ -20,10 +20,28 @@ const SortableTableHeader = ({
                                  align = 'left'
                              }) => {
     const isActive = currentSortKey === sortKey;
+    console.log('SortableTableHeader props:', {
+        label,
+        sortKey,
+        currentSortKey,
+        currentSortOrder,
+        isActive: currentSortKey === sortKey})
 
     const handleClick = () => {
         if (onSort) {
-            onSort(sortKey);
+            // Determine the new sort direction
+            let newDirection = 'asc';
+
+            if (isActive) {
+                // If already sorted by this column, toggle direction
+                newDirection = currentSortOrder === 'asc' ? 'desc' : 'asc';
+            } else {
+                // If clicking on a different column, default to asc
+                newDirection = 'asc';
+            }
+
+            // Pass both sortKey and direction
+            onSort(sortKey, newDirection);
         }
     };
 
@@ -47,11 +65,11 @@ const SortableTableHeader = ({
 
     return (
         <th
-            className={`px-6 py-3 text-${align} text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors`}
+            className={`px-6 py-4 text-${align} text-sm font-semibold cursor-pointer hover:bg-gray-100 transition-colors`}
             onClick={handleClick}
         >
             <div className={`flex items-center gap-2 ${alignmentClasses[align]}`}>
-                <span className={isActive ? 'text-teal-600 font-semibold' : ''}>
+                <span className={isActive ? 'text-primary-600' : 'text-secondary-600'}>
                     {label}
                 </span>
                 {getSortIcon()}
