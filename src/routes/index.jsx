@@ -9,7 +9,7 @@ import Bookings from '../pages/Bookings/Booking.jsx';
 // import Venues from '../pages/Venues/Venues';
 import Pitches from '../pages/Pitches/Pitches';
 // import Tournaments from '../pages/Tournaments/Tournaments';
-// import Tickets from '../pages/Tickets/Tickets';
+import Tickets from '../pages/Tickets/Tickets.jsx';
 // import Revenue from '../pages/Revenue/Revenue';
 // import Reports from '../pages/Reports/Reports';
 // import Players from '../pages/Players/Players';
@@ -23,6 +23,7 @@ import ProtectedRoute from './ProtectedRoute';
 import ForgotPassword from "../pages/ ForgotPassword.jsx";
 import OTPVerification from "../pages/OTPVerification.jsx";
 import ChangePassword from "../pages/ChangePassword.jsx";
+import BannersPage from "../pages/Banners/BannerPage.jsx";
 
 
 const router = createBrowserRouter([
@@ -71,7 +72,11 @@ const router = createBrowserRouter([
             },
             {
                 path: 'tickets',
-                // element: <Tickets />,
+                element: <Tickets />,
+            },
+            {
+                path: 'banners',
+                element: <BannersPage />,
             },
             {
                 path: 'revenue',

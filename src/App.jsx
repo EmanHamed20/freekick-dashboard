@@ -12,7 +12,7 @@ function ToastWrapper() {
 
     return (
         <ToastContainer
-            position={direction === 'rtl' ? 'top-left' : 'top-right'}
+            position={direction === 'rtl' ? 'top-left' : 'top-center'}
             autoClose={3000}
             hideProgressBar={false}
             newestOnTop={true}

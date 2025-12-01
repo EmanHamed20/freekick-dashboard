@@ -222,7 +222,7 @@ const MainTable = ({
                                             label={col.header}
                                             sortKey={col.sortKey}
                                             currentSortKey={sortConfig?.key}
-                                            currentSortOrder={sortConfig?.order}
+                                            currentSortOrder={sortConfig?.direction}  // Changed from sortConfig?.order
                                             onSort={onSort}
                                             align={col.align || 'left'}
                                         />
