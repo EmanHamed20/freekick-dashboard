@@ -234,7 +234,7 @@ const Support = () => {
     ];
 
     const columns = [
-        { header: 'Id', accessor: 'id', render: (row) => <span className="text-gray-900 font-medium">#{row.id}</span> },
+        { header: 'Sr.No', accessor: 'id', render: (row, index) => <span className="text-gray-900 font-medium">{index+1}</span> },
         { header: 'Name', accessor: 'user_info', render: (row) => <span className="text-gray-700">{row.user_info?.name || 'Unknown'}</span> },
         { header: 'Phone Number', accessor: 'user_info', render: (row) => <span className="text-gray-700">{row.user_info?.phone || '-'}</span> },
         { header: 'Title', accessor: 'title', render: (row) => <span className="text-gray-700">{row.title}</span> },
