@@ -9,6 +9,7 @@ import Bookings from '../pages/Bookings/Booking.jsx';
 // import Venues from '../pages/Venues/Venues';
 import Pitches from '../pages/Pitches/Pitches';
 import Amenities from '../pages/Amenities/Amenities';
+import Support from '../pages/Support/Support';
 // import Tournaments from '../pages/Tournaments/Tournaments';
 // import Tickets from '../pages/Tickets/Tickets';
 // import Revenue from '../pages/Revenue/Revenue';
@@ -97,6 +98,10 @@ const router = createBrowserRouter([
             {
                 path: 'settings',
                 // element: <Settings />,
+            },
+            {
+                path: 'support',
+                element: <Support />,
             },
         ],
     },
