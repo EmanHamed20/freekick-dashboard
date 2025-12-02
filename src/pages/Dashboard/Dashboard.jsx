@@ -2,7 +2,7 @@
 import React from 'react';
 import useAnalytics from "../../hooks/useAnalytics.js";
 import { useEffect, useState } from "react";
-import EmiratesChart from "../../components/charts/EmiratesChart.jsx";
+import EmiratesChart from "../../components/Charts/EmiratesChart.jsx";
 import StatCard from "../../components/charts/StatCards.jsx";
 import BookingChart from "../../components/charts/BookingChart.jsx";
 import RevenueTrendChart from "../../components/charts/RevenueTrendChart.jsx";
