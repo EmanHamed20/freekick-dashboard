@@ -11,7 +11,7 @@ import { FaCalendarDays } from "react-icons/fa6";
 import TopTeamsChart from "../../components/Charts/TopTeamsChart.jsx";
 import NotificationsPanel from "../../components/common/NotificationsPanel.jsx";
 import PopularVenues from "../../components/Charts/PopularVenues.jsx";
-// dashboard
+
 const Dashboard = () => {
     const {
         cardAnalytics,
