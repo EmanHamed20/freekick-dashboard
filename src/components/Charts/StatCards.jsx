@@ -16,7 +16,7 @@ const StatCard = ({
     return (
         <div className="bg-white flex  px-5 justify-between items-center   rounded-lg shadow-sm p-4 border border-gray-100">
             <div className="flex  flex-col gap-2  justify-between mb-4">
-                <span className="text-sm text-gray-400 font-medium">{title}
+                <span className="text-sm  text-gray-400 font-medium">{title}
                     <div className="text-2xl font-bold text-secondary-600">
                     {typeof value === 'number' ? value.toLocaleString() : value}
                 </div>
@@ -44,8 +44,8 @@ const StatCard = ({
 
             </div>
 
-            <div className={`w-16 h-16 ${iconBgColor} rounded-full flex items-center justify-center`}>
-                <Icon className={iconColor} size={30} />
+            <div className={`w-10 h-10 ${iconBgColor} rounded-full flex items-center justify-center`}>
+                <Icon className={iconColor} size={20} />
             </div>
         </div>
     );

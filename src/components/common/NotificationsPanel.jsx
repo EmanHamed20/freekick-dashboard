@@ -106,7 +106,7 @@ const NotificationsPanel = () => {
     return (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-gray-900">Notifications</h2>
+                <h2 className="text-xl font-bold text-gray-900">Notifications</h2>
                 <button
                     className="text-gray-400 hover:text-gray-600"
                     onClick={() => getNotifications({ page_limit: 5, ordering: '-created_at' })}

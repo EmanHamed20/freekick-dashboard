@@ -64,8 +64,8 @@ const TopTeamsChart = ({
             {/* Header */}
             <div className="flex items-start justify-between mb-6">
                 <div>
-                    <h2 className="text-lg font-semibold text-gray-900 mb-1">{title}</h2>
-                    <p className="text-sm text-gray-500">{subtitle}</p>
+                    <h2 className="text-xl font-bold text-gray-900 mb-1">{title}</h2>
+                    {/*<p className="text-sm text-gray-500">{subtitle}</p>*/}
                 </div>
 
                 {showPeriodSelector && (

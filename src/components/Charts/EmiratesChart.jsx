@@ -113,7 +113,7 @@ const EmiratesChart = ({
             {/* Header with period filter */}
             <div className="flex justify-between items-start mb-6">
                 <div className={'flex justify-between   w-full'}>
-                    <h3 className="text-lg flex font-semibold text-gray-900">{title}</h3>
+                    <h3 className="text-xl font-bold flex  text-gray-900">{title}</h3>
                     <div className="flex items-center justify-between gap-2 mt-1">
                         {showPeriodFilter ? (
                             <div className="relative" ref={dropdownRef}>
@@ -186,7 +186,7 @@ const EmiratesChart = ({
             )}
 
             {/* Simplified UAE Map Visualization */}
-            <div className="mb-2  h-[25vh] rounded-lg  ">
+            <div className="mb-2  h-[22vh] rounded-lg  ">
                 <img src={map_image} alt={'UAE Map'} className={'w-full h-full  object-contain'} />
             </div>
 

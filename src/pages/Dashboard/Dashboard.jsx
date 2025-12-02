@@ -116,14 +116,14 @@ const Dashboard = () => {
             </div>
             </div>
         }
-            <section className={'flex gap-5  i '}>
-                <aside className={'w-3/4'}>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-6 mb-8">
+            <section className={'lg:flex gap-4 '}>
+                <aside className={'lg:w-3/4'}>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 xl:gap-6 mb-8">
                         {stats.map((stat, index) => (
                             <StatCard key={index} {...stat} />
                         ))}
                     </div>
-                    <div className="mb-8  gap-5 grid grid-cols-2 ">
+                    <div className="lg:mb-8 mb-4  gap-5 grid lg:grid-cols-2 ">
                         <BookingChart
                             title="Booking Trends"
                             height={350}
@@ -135,7 +135,7 @@ const Dashboard = () => {
                             showPeriodSelector={true}
                         />
                     </div>
-                    <div className="mb-8   grid grid-cols-2 gap-8 ">
+                    <div className="lg:mb-8 mb-4  gap-5 grid lg:grid-cols-2  ">
                         <EmiratesChart
                             data={topEmirates || {}}
                             loading={isTopEmiratesLoading}
@@ -158,7 +158,7 @@ const Dashboard = () => {
                 <aside>
 
                 </aside>
-                <div className=" w-1/4">
+                <div className=" lg:w-1/4">
                     <div className="dashboard-sidebar">
                         <NotificationsPanel />
                     </div>
