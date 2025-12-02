@@ -112,7 +112,16 @@ export const markNotificationAsRead = createAsyncThunk(
         }
     }
 );
-
+export const fetchPopularVenues = createAsyncThunk(
+    'analytics/fetchPopularVenues',
+    async (params = {}, { rejectWithValue }) => {
+        try {
+            return await analyticsService.getPopularVenues(params);
+        } catch (error) {
+            return rejectWithValue(error.response?.data || error.message);
+        }
+    }
+);
 const initialState = {
     cardAnalytics: null,
     revenueTrend: null,
@@ -134,6 +143,7 @@ const initialState = {
         bookingChart: false,
         topTeams: false,
         notifications: false,
+        popularVenues: false,  // ADD THIS LINE
         notificationDetail: false,
         all: false,
     },
@@ -146,6 +156,7 @@ const initialState = {
         topTeams: null,
         notifications: null,
         notificationDetail: null,
+        popularVenues: null,  // ADD THIS LINE
         all: null,
     },
 };
@@ -170,6 +181,7 @@ const analyticsSlice = createSlice({
             state.topEmirates = null;
             state.weeklyBookings = null;
             state.topTeams = null;
+            state.popularVenues = null;  // ADD THIS LINE
             state.notifications = [];
             state.notificationsCount = 0;
             Object.keys(state.error).forEach(key => {
@@ -188,6 +200,9 @@ const analyticsSlice = createSlice({
         clearNotifications: (state) => {
             state.notifications = [];
             state.notificationsCount = 0;
+        },
+        setVenuesCity: (state, action) => {  // ADD THIS REDUCER
+            state.currentVenuesCity = action.payload;
         },
     },
     extraReducers: (builder) => {
@@ -347,6 +362,19 @@ const analyticsSlice = createSlice({
                 state.loading.all = false;
                 state.error.all = action.payload;
             });
+        builder
+            .addCase(fetchPopularVenues.pending, (state) => {
+                state.loading.popularVenues = true;
+                state.error.popularVenues = null;
+            })
+            .addCase(fetchPopularVenues.fulfilled, (state, action) => {
+                state.loading.popularVenues = false;
+                state.popularVenues = action.payload;
+            })
+            .addCase(fetchPopularVenues.rejected, (state, action) => {
+                state.loading.popularVenues = false;
+                state.error.popularVenues = action.payload;
+            });
     },
 });
 
@@ -357,6 +385,7 @@ export const {
     setEmiratesPeriod,
     setTeamsPeriod,
     clearNotifications,
+    setVenuesCity,  // ADD THIS LINE
 } = analyticsSlice.actions;
 
 export default analyticsSlice.reducer;

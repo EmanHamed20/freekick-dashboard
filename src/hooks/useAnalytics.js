@@ -17,6 +17,8 @@ import {
     fetchNotificationById,
     markNotificationAsRead,
     clearNotifications,
+    fetchPopularVenues,  // ADD THIS
+    setVenuesCity,  // ADD THIS
 } from '../features/dashboard/analyticsSlice.js';
 
 const useAnalytics = () => {
@@ -78,6 +80,12 @@ const useAnalytics = () => {
     const resetData = useCallback(() => {
         dispatch(resetAnalyticsData());
     }, [dispatch]);
+    const getPopularVenues = useCallback((params = {}) => {
+        if (params.city) {
+            dispatch(setVenuesCity(params.city));
+        }
+        dispatch(fetchPopularVenues(params));
+    }, [dispatch]);
 
     return {
         ...analyticsState,
@@ -94,6 +102,8 @@ const useAnalytics = () => {
         clearAllNotifications,
         clearError,
         resetData,
+        getPopularVenues,  // ADD THIS
+
 
         isLoading: analyticsState.loading.all,
         isCardAnalyticsLoading: analyticsState.loading.cardAnalytics,
@@ -104,7 +114,7 @@ const useAnalytics = () => {
         isTopTeamsLoading: analyticsState.loading.topTeams,
         isNotificationsLoading: analyticsState.loading.notifications,
         isNotificationDetailLoading: analyticsState.loading.notificationDetail,
-
+        isPopularVenuesLoading: analyticsState.loading.popularVenues,  // ADD THIS
         hasError: Object.values(analyticsState.error).some(error => error !== null),
     };
 };

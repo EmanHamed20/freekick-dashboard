@@ -16,7 +16,7 @@ const NotificationsPanel = () => {
         // Fetch latest 5 notifications
         getNotifications({ page_limit: 5, ordering: '-created_at' });
     }, []);
-
+    console.log(notifications,'ggggggg')
     const getNotificationIcon = (notification) => {
         const title = notification.title?.toLowerCase() || '';
 

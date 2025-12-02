@@ -10,6 +10,7 @@ import RevenueTrendChart from "../../components/charts/RevenueTrendChart.jsx";
 import { FaCalendarDays } from "react-icons/fa6";
 import TopTeamsChart from "../../components/Charts/TopTeamsChart.jsx";
 import NotificationsPanel from "../../components/common/NotificationsPanel.jsx";
+import PopularVenues from "../../components/Charts/PopularVenues.jsx";
 
 const Dashboard = () => {
     const {
@@ -160,6 +161,9 @@ const Dashboard = () => {
                 <div className=" w-1/4">
                     <div className="dashboard-sidebar">
                         <NotificationsPanel />
+                    </div>
+                    <div className=" mt-5">
+                        <PopularVenues />
                     </div>
                 </div>
             </section>

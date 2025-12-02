@@ -109,7 +109,24 @@ const analyticsService = {
             throw error;
         }
     },
+    getPopularVenues: async (params = {}) => {
+        try {
+            const response = await api.get('/venue/venue/venues/', {
+                params: {
+                    city: params.city,
+                    page_limit: params.page_limit || 5,
+                    ordering: params.ordering || '-number_of_booking',
+                    is_active: true,
+                    ...params
+                }
+            });
 
+
+                 return  response.data
+        } catch (error) {
+            throw error;
+        }
+    },
     // Get all analytics including notifications
     getAllAnalytics: async () => {
         try {
@@ -120,7 +137,8 @@ const analyticsService = {
                 weeklyBookings,
                 bookingChartData,
                 topTeams,
-                notifications
+                notificationsResponse,   // Clear name
+                venuesResponse          // Clear name
             ] = await Promise.all([
                 analyticsService.getCardAnalytics(),
                 analyticsService.getRevenueTrend(),
@@ -129,6 +147,7 @@ const analyticsService = {
                 analyticsService.getBookingChartAnalytics('this_week'),
                 analyticsService.getTopTeams(),
                 analyticsService.getNotifications({ page_limit: 5 }),
+                analyticsService.getPopularVenues({ city: 'Abu Dhabi' }),
             ]);
 
             return {
@@ -138,7 +157,8 @@ const analyticsService = {
                 weeklyBookings,
                 bookingChartData,
                 topTeams,
-                notifications,
+                notifications: notificationsResponse,    // Explicit assignment
+                popularVenues: venuesResponse,          // Explicit assignment
             };
         } catch (error) {
             throw error;
