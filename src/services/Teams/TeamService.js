@@ -114,7 +114,7 @@ export const teamService = {
             if (filters.page) params.append('page', filters.page);
             if (filters.page_limit) params.append('page_limit', filters.page_limit);
 
-            const response = await api.get(`/booking/book/?${params.toString()}`);
+            const response = await api.get(`/booking/book/team/${teamId}`,{params});
 
             // Handle different response structures
             if (response.data && response.data.results) {
@@ -147,7 +147,7 @@ export const teamService = {
             if (params.page) queryParams.append('page', params.page);
             if (params.page_limit) queryParams.append('page_limit', params.page_limit);
 
-            const response = await api.get(`/tournaments/tournaments/?${queryParams.toString()}`);
+            const response = await api.get(`/tournaments/tournaments/team/${teamId}/`,);
 
             // Handle different response structures
             if (response.data && response.data.results) {

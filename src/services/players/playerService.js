@@ -58,7 +58,7 @@ export const playerService = {
         try {
             // Add playerId to params to filter by player
             const response = await api.get(`/booking/book/`, {
-                params: { ...params, user_id: playerId }
+                params: { ...params, user__id: playerId }
             });
 
             // Handle paginated response structure
