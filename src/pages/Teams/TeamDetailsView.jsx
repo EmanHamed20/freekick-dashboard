@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useTeam, useJoinedTeam, useTeamBookings, useTeamTournaments } from "../../hooks/useTeams.js";
 import { useContact } from "../../hooks/useContact.js";
 import { showConfirm } from "../../components/showConfirm.jsx";
-import { teamService } from "../../services/teams/teamService.js";
+import { teamService } from "../../services/Teams/TeamService.js";
 import { toast } from "react-toastify";
 import ArrowIcon from "../../components/common/ArrowIcon.jsx";
 import { ReusableDatePicker } from "../../components/common/ReusableDatePicker.jsx";
