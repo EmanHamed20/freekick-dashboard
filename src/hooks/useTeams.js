@@ -1,6 +1,6 @@
 // hooks/useTeams.js
 import { useEffect, useState, useRef } from 'react';
-import { teamService } from '../services/teams/teamService';
+import { teamService } from '../services/Teams/TeamService.js';
 
 // Hook to fetch multiple teams with filters
 export const useTeams = (filters = {}) => {
