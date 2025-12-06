@@ -4,7 +4,7 @@ import { useDispatch } from "react-redux";
 import { usePlayers, usePlayerAnalytics } from "../../hooks/usePlayers.js";
 import { setPageTitle } from "../../features/pageTitle/pageTitleSlice.js";
 import { ArrowLeft, User, Wallet, Calendar, Trophy, Phone, Mail } from "lucide-react";
-import PlayerDetailView from "./PlayerDetailView.jsx";
+import PlayerDetailView from "./playerDetailView.jsx";
 import MainTable from "../../components/MainTable.jsx";
 
 function Players() {
