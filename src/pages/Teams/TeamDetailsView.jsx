@@ -1,4 +1,3 @@
-// pages/Teams/TeamDetailView.jsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { useTeam, useJoinedTeam, useTeamBookings, useTeamTournaments } from "../../hooks/useTeams.js";
 import { useContact } from "../../hooks/useContact.js";
@@ -27,7 +26,8 @@ import {
     Globe,
     Edit2,
     Save,
-    X
+    X,
+    Power
 } from "lucide-react";
 import MainTable from "../../components/MainTable.jsx";
 
@@ -263,8 +263,10 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
     const [tournamentSearch, setTournamentSearch] = useState('');
     const [tournamentFilters, setTournamentFilters] = useState({});
     const [tournamentSort, setTournamentSort] = useState({ key: 'start_date', direction: 'desc' });
+    const [isUpdating, setIsUpdating] = useState(false);
 
     // Tournament columns configuration for MainTable
+// Update the tournament columns configuration
     const tournamentColumns = [
         {
             header: 'Tournament',
@@ -272,55 +274,118 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
             sortable: true,
             sortKey: 'name',
             render: (tournament) => (
-                <div>
-                    <p className="text-sm font-semibold text-gray-900">{tournament.name}</p>
-                    <p className="text-xs text-gray-500 truncate max-w-xs">
-                        {tournament.subtitle || tournament.description || 'No description'}
-                    </p>
+                <div className="flex items-center gap-3">
+                    {tournament.images && tournament.images.length > 0 ? (
+                        <img
+                            src={`https://pub-f8c5de66602c4f6f91311c6fd40e1794.r2.dev/${tournament.images[0].image}`}
+                            alt={tournament.name}
+                            className="w-10 h-10 rounded-lg object-cover"
+                        />
+                    ) : (
+                        <div className="w-10 h-10 rounded-lg bg-primary-100 flex items-center justify-center">
+                            <Trophy className="w-5 h-5 text-primary-600" />
+                        </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900 truncate">{tournament.name}</p>
+                        <p className="text-xs text-gray-500 truncate">
+                            {tournament.subtitle || tournament.description || 'No description'}
+                        </p>
+                    </div>
                 </div>
             )
         },
         {
             header: 'Status',
-            accessor: 'status',
+            accessor: 'is_active',
             sortable: true,
-            sortKey: 'status',
-            render: (tournament) => getTournamentStatusBadge(tournament.status)
+            sortKey: 'is_active',
+            align: 'center',
+            render: (tournament) => (
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
+                    tournament.is_active
+                        ? 'bg-primary-100 text-primary-700'
+                        : 'bg-red-100 text-red-700'
+                }`}>
+                {tournament.is_active ? 'Active' : 'Inactive'}
+            </span>
+            )
         },
         {
-            header: 'Date',
+            header: 'Start Date',
             accessor: 'start_date',
             sortable: true,
             sortKey: 'start_date',
             align: 'center',
             render: (tournament) => (
+                <div className="flex flex-col items-center">
                 <span className="text-sm text-gray-600">
                     {formatDate(tournament.start_date)}
                 </span>
+                    <span className="text-xs text-gray-400">
+                    {tournament.start_time}
+                </span>
+                </div>
+            )
+        },
+        {
+            header: 'End Date',
+            accessor: 'end_date',
+            sortable: true,
+            sortKey: 'end_date',
+            align: 'center',
+            render: (tournament) => (
+                <div className="flex flex-col items-center">
+                <span className="text-sm text-gray-600">
+                    {formatDate(tournament.end_date)}
+                </span>
+                    <span className="text-xs text-gray-400">
+                    {tournament.end_time}
+                </span>
+                </div>
             )
         },
         {
             header: 'Format',
-            accessor: 'format',
+            accessor: 'scoring_system',
             sortable: true,
             sortKey: 'scoring_system',
             align: 'center',
             render: (tournament) => (
                 <span className="text-sm text-gray-600 capitalize">
-                    {tournament.scoring_system || tournament.format || 'N/A'}
-                </span>
+                {tournament.scoring_system?.replace('_', ' ') || 'N/A'}
+            </span>
             )
         },
         {
-            header: 'Result',
-            accessor: 'result',
-            sortable: true,
-            sortKey: 'result',
+            header: 'Participants',
+            accessor: 'joined_user_data',
             align: 'center',
             render: (tournament) => (
-                <span className="text-sm font-medium text-gray-900">
-                    {tournament.result || 'N/A'}
-                </span>
+                <div className="flex items-center justify-center">
+                    <div className="flex -space-x-2">
+                        {tournament.joined_user_data?.slice(0, 3).map((user, idx) => (
+                            <div key={user.id} className="relative">
+                                {user.image ? (
+                                    <img
+                                        src={user.image}
+                                        alt={user.name}
+                                        className="w-6 h-6 rounded-full border-2 border-white"
+                                    />
+                                ) : (
+                                    <div className="w-6 h-6 rounded-full bg-gray-300 border-2 border-white flex items-center justify-center text-xs">
+                                        {user.name?.charAt(0)?.toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    {tournament.joined_user_data && tournament.joined_user_data.length > 3 && (
+                        <span className="text-xs text-gray-500 ml-1">
+                        +{tournament.joined_user_data.length - 3}
+                    </span>
+                    )}
+                </div>
             )
         },
         {
@@ -331,12 +396,11 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
             align: 'right',
             render: (tournament) => (
                 <span className="text-sm font-semibold text-primary-600">
-                    {formatAmount(tournament.entry_fee || 0)}
-                </span>
+                {formatAmount(tournament.entry_fee || 0)}
+            </span>
             )
         }
     ];
-
 
     // Filter and sort tournaments (client-side filtering for example)
     const filteredTournaments = useMemo(() => {
@@ -499,23 +563,7 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
         );
     };
 
-    const getTournamentStatusBadge = (status) => {
-        const statusColors = {
-            won: 'bg-primary-100 text-primary-700',
-            completed: 'bg-gray-100 text-gray-700',
-            ongoing: 'bg-primary-300 text-white',
-            upcoming: 'bg-secondary-600 text-white',
-            qualify: 'bg-yellow-100 text-yellow-700',
-            lost: 'bg-red-100 text-red-700',
-            active: 'bg-primary-100 text-primary-700',
-            inactive: 'bg-gray-100 text-gray-700'
-        };
-        return (
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColors[status] || 'bg-gray-100 text-gray-700'}`}>
-                {status?.charAt(0).toUpperCase() + status?.slice(1)}
-            </span>
-        );
-    };
+
 
     const handleCreatorEmail = () => {
         const email = team.team_leader?.email;
@@ -542,7 +590,60 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
             throw error;
         }
     };
+    const StatusToggle = ({ isActive, onToggle, disabled = false }) => {
+        const handleToggle = async () => {
+            const confirmed = await showConfirm({
+                title: `Are you sure?`,
+                text: `Do you want to ${isActive ? 'deactivate' : 'activate'} this team?`,
+                confirmButtonText: `Yes, ${isActive ? 'Deactivate' : 'Activate'}`,
+                cancelButtonText: "Cancel",
+                icon: isActive ? 'warning' : 'info'
+            });
 
+            if (confirmed) {
+                onToggle(!isActive);
+            }
+        };
+
+        return (
+            <button
+                onClick={handleToggle}
+                disabled={disabled}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg font-medium text-sm transition-all ${
+                    isActive
+                        ? 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200'
+                        : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200'
+                } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+                {isActive ? (
+                    <>
+                        <CheckCircle className="w-4 h-4" />
+                        Active
+                    </>
+                ) : (
+                    <>
+                        <XCircle className="w-4 h-4" />
+                        Inactive
+                    </>
+                )}
+                <Power className={`w-3 h-3 transition-transform ${disabled ? '' : 'hover:scale-110'}`} />
+            </button>
+        );
+    };
+
+    const handleStatusToggle = async (newStatus) => {
+        setIsUpdating(true);
+        try {
+            await teamService.updateTeam(team.id, { is_active: newStatus });
+            toast.success(`Team ${newStatus ? 'activated' : 'deactivated'} successfully`);
+            refetchTeam();
+            if (onRefresh) onRefresh();
+        } catch (error) {
+            toast.error('Failed to update team status: ' + error.message);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
     return (
         <div className="min-h-screen xl:px-5  bg-gray-50">
             {/* Header */}
@@ -560,7 +661,7 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
 
             {/* Main Content */}
             <div className=" mx-auto py-8">
-                <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
                     {/* Left Sidebar - Team Info */}
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 sticky top-6">
@@ -576,27 +677,26 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
                                 <h2 className="text-xl font-bold text-gray-900 mb-2">{team.name}</h2>
                                 <p className="text-sm text-gray-500 mb-3">ID: TM{String(team.id).padStart(5, '0')}</p>
 
-                                <div className="flex items-center justify-center gap-2 mb-4">
-                                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
-                                        team.is_active ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-700'
-                                    }`}>
-                                        {team.is_active ? 'Active' : 'Inactive'}
-                                    </span>
-                                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${
-                                        team.private ? 'bg-secondary-600 text-white' : 'bg-primary-100 text-primary-700'
-                                    }`}>
-                                        {team.private ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
-                                        {team.private ? 'Private' : 'Public'}
-                                    </span>
+                                {/* Updated Status and Points Section */}
+                                <div className="flex flex-col items-center gap-3 mb-4">
+                                    <div className="flex items-center gap-2">
+                                        <StatusToggle
+                                            isActive={team.is_active}
+                                            onToggle={handleStatusToggle}
+                                            disabled={isUpdating}
+                                        />
+                                        <span className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${
+                                            team.private ? 'bg-secondary-600 text-white' : 'bg-primary-100 text-primary-700'
+                                        }`}>
+                                            {team.private ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                                            {team.private ? 'Private' : 'Public'}
+                                        </span>
+                                    </div>
+
+                                    {/* Points Editor */}
+
                                 </div>
 
-                                <button
-                                    onClick={() => setIsEditModalOpen(true)}
-                                    className="w-full px-4 py-2 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2"
-                                >
-                                    <Edit2 className="w-4 h-4" />
-                                    Edit Team
-                                </button>
                             </div>
 
                             {/* Stats */}
@@ -624,10 +724,17 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-2">
-                                        <Star className="w-4 h-4 text-gray-400" />
-                                        <span className="text-sm text-gray-600">Points</span>
+                                    <Star className="w-4 h-4 text-gray-400" />
+                                    <span className="text-sm text-gray-600">Points</span>
+
                                     </div>
-                                    <span className="text-sm font-semibold text-primary-600">{team.num_of_points || 0}</span>
+                                    <span className="text-sm font-semibold text-gray-900">{team.num_of_points || 0}</span>
+
+                                    {/*<PointsEditor*/}
+                                    {/*    points={team.num_of_points || 0}*/}
+                                    {/*    onSave={handlePointsUpdate}*/}
+                                    {/*    disabled={isUpdating}*/}
+                                    {/*/>*/}
                                 </div>
                             </div>
 
@@ -680,10 +787,10 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
                     </div>
 
                     {/* Right Content Area */}
-                    <div className="lg:col-span-2 xl:col-span-3 space-y-6">
+                    <div className="lg:col-span-2 2xl:col-span-3 space-y-6">
                         {/* Bookings Section */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-                            <div className="p-3 px-5 w-full  flex flex-wrap justify-between items-center border-b border-gray-200">
+                            <div className="p-3 px-5 w-full  flex flex-wrap justify-between items-center border-b border-gray-100">
                                 <h3 className="text-lg w-48 font-bold text-gray-900 mb-4"> Bookings</h3>
                                 <div className="order-3 w-full xl:w-fit  flex justify-center xl:order-2">
                                     <ReusableDatePicker
@@ -712,7 +819,7 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
                                 ) : filteredBookings.length > 0 ? (
                                     <div className="space-y-3">
                                         {filteredBookings.map((booking) => (
-                                            <div key={booking.id} className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 transition-colors">
+                                            <div key={booking.id} className="border border-gray-100 rounded-lg p-4 hover:border-primary-300 transition-colors">
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1">
@@ -774,7 +881,7 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
                                     totalItems={filteredTournaments.length}
                                     onPageChange={handleTournamentPageChange}
                                     showSearch ={false}
-                                onSort={handleTournamentSort}
+                                    onSort={handleTournamentSort}
                                 />
                             ) : (
                                 <div className="text-center py-12">
@@ -786,7 +893,7 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
                         </div>
                         {/* Members Section */}
                         <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-                            <div className="p-6 flex justify-between items-center border-b border-gray-200">
+                            <div className="lg:px-6 p-4 flex justify-between items-center border-b border-gray-100">
                                 <h3 className="text-lg font-bold text-gray-900">Team Members</h3>
                                 <p className="text-sm text-gray-500 mt-1">Total : {team.members?.length || 0} players</p>
                             </div>
@@ -842,5 +949,4 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
         </div>
     );
 };
-
-export default TeamDetailView;
+export  default TeamDetailView
