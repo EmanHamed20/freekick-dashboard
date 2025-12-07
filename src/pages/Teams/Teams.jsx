@@ -258,11 +258,6 @@ function Teams() {
         }
     }, [teams]);
 
-    // Get analytics data with fallback values
-    const activeTeams = analytics?.active_teams || 0;
-    const totalMatches = analytics?.total_matches || 0;
-    const totalTournaments = analytics?.total_tournaments || 0;
-    const totalMembers = analytics?.total_members || 0;
 
     // Total items for pagination
     const totalItems = teams?.count || 0;
@@ -299,65 +294,7 @@ function Teams() {
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Stats Cards */}
-            <div className="px-4 pb-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-8 mb-6">
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                                <Users className="text-green-600" size={24} />
-                            </div>
-                            <div>
-                                <div className="text-3xl font-bold text-gray-900">
-                                    {analyticsLoading ? '...' : activeTeams}
-                                </div>
-                                <div className="text-sm text-gray-500">Active Teams</div>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                                <Target className="text-blue-600" size={24} />
-                            </div>
-                            <div>
-                                <div className="text-3xl font-bold text-gray-900">
-                                    {analyticsLoading ? '...' : totalMatches}
-                                </div>
-                                <div className="text-sm text-gray-500">Total Matches</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                                <Trophy className="text-yellow-600" size={24} />
-                            </div>
-                            <div>
-                                <div className="text-3xl font-bold text-gray-900">
-                                    {analyticsLoading ? '...' : totalTournaments}
-                                </div>
-                                <div className="text-sm text-gray-500">Tournaments</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="bg-white rounded-lg shadow-sm p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                                <Award className="text-purple-600" size={24} />
-                            </div>
-                            <div>
-                                <div className="text-3xl font-bold text-gray-900">
-                                    {analyticsLoading ? '...' : totalMembers}
-                                </div>
-                                <div className="text-sm text-gray-500">Total Members</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
             <h1 className="px-8 text-primary-700 lg:-mb-14 lg:text-xl lg:mt-8 font-bold">
                 Teams List

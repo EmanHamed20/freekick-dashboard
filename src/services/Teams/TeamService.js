@@ -40,16 +40,16 @@ export const teamService = {
     },
 
     // Get joined team (tournaments the team has joined)
-    getJoinedTeam: async (id) => {
-        try {
-            const response = await api.get(`/tournaments/joined-teams/${id}/`);
-            return response.data;
-        } catch (error) {
-            // Log but don't throw - return empty array instead
-            console.warn('Tournament API failed for team', id, error.message);
-            return []; // Return empty array instead of throwing
-        }
-    },
+    // getJoinedTeam: async (id) => {
+    //     try {
+    //         const response = await api.get(`/tournaments/joined-teams/${id}/`);
+    //         return response.data;
+    //     } catch (error) {
+    //         // Log but don't throw - return empty array instead
+    //         console.warn('Tournament API failed for team', id, error.message);
+    //         return []; // Return empty array instead of throwing
+    //     }
+    // },
 
     // Get team analytics/statistics
     getTeamAnalytics: async () => {
@@ -82,10 +82,9 @@ export const teamService = {
         }
     },
 
-    // Reactivate team
-    reactivateTeam: async (id) => {
+    updateTeam: async (id,data) => {
         try {
-            const response = await api.post(`/teams/teams/${id}/reactivate/`);
+            const response = await api.patch(`/teams/teams/${id}/`,data);
             return response.data;
         } catch (error) {
             throw error.response?.data || error.message;

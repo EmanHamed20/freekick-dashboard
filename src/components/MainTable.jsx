@@ -40,7 +40,9 @@ const MainTable = ({
                        onPageChange,
                        topActions = [],
                        sortConfig = null,
-                       onSort = null
+                       onSort = null,
+                       showSearch = true, // NEW: Add this prop to control search visibility
+                       showFilters = true // NEW: Add this to control filters visibility
                    }) => {
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -106,7 +108,7 @@ const MainTable = ({
     };
 
     return (
-        <div className="py-6 bg-gray-50 min-h-screen font-sans text-secondary-600">
+        <div className="  min-h-60 font-sans text-secondary-600">
             <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center mb-6 gap-4 px-2">
 
                 {/* Dynamic Filters */}
@@ -174,7 +176,9 @@ const MainTable = ({
 
                 {/* Global Search & Actions */}
                 <div className="flex flex-wrap items-center gap-3 w-full xl:w-auto justify-end">
-                    <TextField
+                    {showSearch && (
+
+                        <TextField
                         variant="outlined"
                         size="small"
                         placeholder={searchPlaceholder}
@@ -193,6 +197,7 @@ const MainTable = ({
                             ),
                         }}
                     />
+                    )}
 
                     {topActions.map((action, index) => (
 
