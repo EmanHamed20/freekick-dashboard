@@ -39,6 +39,7 @@ import Teams from "../pages/Teams/Teams.jsx";
 import Players from "../pages/players/players.jsx";
 import AppsNotifications from "../pages/AppsNotifications/AppsNotifications.jsx";
 import RevenueOverview from "../pages/RevenueOverview/RevenueOverview.jsx";
+import Reports from "../pages/Reports/Reports.jsx";
 
 
 const router = createBrowserRouter([
@@ -118,7 +119,7 @@ const router = createBrowserRouter([
             },
             {
                 path: 'reports',
-                // element: <Reports />,
+                element: <Reports />,
             },
             {
                 path: 'players',
