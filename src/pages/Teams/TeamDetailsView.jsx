@@ -11,24 +11,29 @@ import {
     Calendar,
     Mail,
     MapPin,
-    MoreVertical,
     Phone,
     Trophy,
     Users,
     Shield,
     Clock,
-    User,
     Award,
     CheckCircle,
     XCircle,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    Activity,
+    Star,
+    Lock,
+    Globe,
+    Edit2,
+    Save,
+    X
 } from "lucide-react";
+import MainTable from "../../components/MainTable.jsx";
 
 // ============================================================================
 // PAGINATION COMPONENT
 // ============================================================================
-
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
     const getPageNumbers = () => {
         const pages = [];
@@ -67,7 +72,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
             <button
                 onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-lg hover:bg-primary-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
                 <ChevronLeft className="w-5 h-5 text-primary-600" />
             </button>
@@ -82,7 +87,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
                         className={`px-4 py-2 rounded-lg font-medium transition-colors ${
                             currentPage === page
                                 ? 'bg-primary-500 text-white'
-                                : 'hover:bg-gray-100 text-gray-700'
+                                : 'hover:bg-primary-50 text-gray-700'
                         }`}
                     >
                         {page}
@@ -93,7 +98,7 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
             <button
                 onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-2 rounded-lg hover:bg-primary-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
                 <ChevronRight className="w-5 h-5 text-primary-600" />
             </button>
@@ -102,14 +107,130 @@ const Pagination = ({ currentPage, totalPages, onPageChange }) => {
 };
 
 // ============================================================================
+// EDIT MODAL COMPONENT
+// ============================================================================
+const EditModal = ({ isOpen, onClose, onSave, team }) => {
+    const [isActive, setIsActive] = useState(team.is_active);
+    const [points, setPoints] = useState(team.num_of_points);
+    const [isLoading, setIsLoading] = useState(false);
+
+    useEffect(() => {
+        setIsActive(team.is_active);
+        setPoints(team.num_of_points);
+    }, [team]);
+
+    const handleSave = async () => {
+        setIsLoading(true);
+        try {
+            await onSave({ is_active: isActive, num_of_points: points });
+            onClose();
+        } catch (error) {
+            console.error('Failed to update team', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full">
+                <div className="p-6 border-b border-gray-200">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-xl font-bold text-gray-900">Edit Team Status</h3>
+                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+
+                <div className="p-6 space-y-6">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Team Status
+                        </label>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setIsActive(true)}
+                                className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                                    isActive
+                                        ? 'bg-primary-500 text-white shadow-md'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                <CheckCircle className="w-5 h-5 inline-block mr-2" />
+                                Active
+                            </button>
+                            <button
+                                onClick={() => setIsActive(false)}
+                                className={`flex-1 py-3 px-4 rounded-lg font-medium transition-all ${
+                                    !isActive
+                                        ? 'bg-gray-600 text-white shadow-md'
+                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            >
+                                <XCircle className="w-5 h-5 inline-block mr-2" />
+                                Inactive
+                            </button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Team Points
+                        </label>
+                        <input
+                            type="number"
+                            value={points}
+                            onChange={(e) => setPoints(parseInt(e.target.value) || 0)}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                            placeholder="Enter points"
+                        />
+                    </div>
+                </div>
+
+                <div className="p-6 bg-gray-50 flex gap-3 rounded-b-xl">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 px-4 py-3 bg-white border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
+                    >
+                        Cancel
+                    </button>
+                    <button
+                        onClick={handleSave}
+                        disabled={isLoading}
+                        className="flex-1 px-4 py-3 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                        {isLoading ? (
+                            <>
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
+                                Saving...
+                            </>
+                        ) : (
+                            <>
+                                <Save className="w-4 h-4" />
+                                Save Changes
+                            </>
+                        )}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// ============================================================================
 // TEAM DETAIL VIEW
 // ============================================================================
-
 const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
     const teamId = initialTeam?.id;
     const { team: fetchedTeam, isLoading: isFetchingDetails } = useTeam(teamId);
     const { joinedTeam, isLoading: isLoadingJoined } = useJoinedTeam(teamId);
     const { handleEmailClick, handleWhatsAppClick } = useContact();
+
+    // State for edit modal
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     // Team bookings hook
     const [bookingFilters, setBookingFilters] = useState({
@@ -122,7 +243,6 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
     const { tournaments: teamTournaments, isLoading: tournamentsLoading } = useTeamTournaments(teamId);
 
     const team = fetchedTeam || initialTeam;
-    const [isActionLoading, setIsActionLoading] = useState(false);
 
     // Booking filters
     const [bookingDate, setBookingDate] = useState(new Date());
@@ -130,7 +250,7 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
 
     // Tournament pagination
     const [currentTournamentPage, setCurrentTournamentPage] = useState(1);
-    const tournamentsPerPage = 5;
+    const tournamentsPerPage = 10;
 
     // Update booking filters when date or status changes
     useEffect(() => {
@@ -140,6 +260,169 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
             status: bookingStatus === 'all' ? undefined : bookingStatus
         });
     }, [bookingDate, bookingStatus]);
+    const [tournamentSearch, setTournamentSearch] = useState('');
+    const [tournamentFilters, setTournamentFilters] = useState({});
+    const [tournamentSort, setTournamentSort] = useState({ key: 'start_date', direction: 'desc' });
+
+    // Tournament columns configuration for MainTable
+    const tournamentColumns = [
+        {
+            header: 'Tournament',
+            accessor: 'name',
+            sortable: true,
+            sortKey: 'name',
+            render: (tournament) => (
+                <div>
+                    <p className="text-sm font-semibold text-gray-900">{tournament.name}</p>
+                    <p className="text-xs text-gray-500 truncate max-w-xs">
+                        {tournament.subtitle || tournament.description || 'No description'}
+                    </p>
+                </div>
+            )
+        },
+        {
+            header: 'Status',
+            accessor: 'status',
+            sortable: true,
+            sortKey: 'status',
+            render: (tournament) => getTournamentStatusBadge(tournament.status)
+        },
+        {
+            header: 'Date',
+            accessor: 'start_date',
+            sortable: true,
+            sortKey: 'start_date',
+            align: 'center',
+            render: (tournament) => (
+                <span className="text-sm text-gray-600">
+                    {formatDate(tournament.start_date)}
+                </span>
+            )
+        },
+        {
+            header: 'Format',
+            accessor: 'format',
+            sortable: true,
+            sortKey: 'scoring_system',
+            align: 'center',
+            render: (tournament) => (
+                <span className="text-sm text-gray-600 capitalize">
+                    {tournament.scoring_system || tournament.format || 'N/A'}
+                </span>
+            )
+        },
+        {
+            header: 'Result',
+            accessor: 'result',
+            sortable: true,
+            sortKey: 'result',
+            align: 'center',
+            render: (tournament) => (
+                <span className="text-sm font-medium text-gray-900">
+                    {tournament.result || 'N/A'}
+                </span>
+            )
+        },
+        {
+            header: 'Entry Fee',
+            accessor: 'entry_fee',
+            sortable: true,
+            sortKey: 'entry_fee',
+            align: 'right',
+            render: (tournament) => (
+                <span className="text-sm font-semibold text-primary-600">
+                    {formatAmount(tournament.entry_fee || 0)}
+                </span>
+            )
+        }
+    ];
+
+
+    // Filter and sort tournaments (client-side filtering for example)
+    const filteredTournaments = useMemo(() => {
+        let tournaments = teamTournaments?.results || [];
+
+        // Apply search filter
+        if (tournamentSearch) {
+            tournaments = tournaments.filter(t =>
+                t.name.toLowerCase().includes(tournamentSearch.toLowerCase()) ||
+                (t.subtitle && t.subtitle.toLowerCase().includes(tournamentSearch.toLowerCase())) ||
+                (t.description && t.description.toLowerCase().includes(tournamentSearch.toLowerCase()))
+            );
+        }
+
+        // Apply status filter
+        if (tournamentFilters.status) {
+            tournaments = tournaments.filter(t =>
+                t.status === tournamentFilters.status
+            );
+        }
+
+        // Apply format filter
+        if (tournamentFilters.scoring_system) {
+            tournaments = tournaments.filter(t =>
+                t.scoring_system === tournamentFilters.scoring_system
+            );
+        }
+
+        // Apply sorting
+        if (tournamentSort.key) {
+            tournaments.sort((a, b) => {
+                const aValue = a[tournamentSort.key];
+                const bValue = b[tournamentSort.key];
+
+                if (tournamentSort.key === 'start_date') {
+                    const aDate = new Date(aValue || 0);
+                    const bDate = new Date(bValue || 0);
+                    return tournamentSort.direction === 'asc'
+                        ? aDate - bDate
+                        : bDate - aDate;
+                }
+
+                if (tournamentSort.key === 'entry_fee') {
+                    const aNum = parseFloat(aValue) || 0;
+                    const bNum = parseFloat(bValue) || 0;
+                    return tournamentSort.direction === 'asc'
+                        ? aNum - bNum
+                        : bNum - aNum;
+                }
+
+                // String comparison for other fields
+                const comparison = String(aValue || '').localeCompare(String(bValue || ''));
+                return tournamentSort.direction === 'asc' ? comparison : -comparison;
+            });
+        }
+
+        return tournaments;
+    }, [teamTournaments, tournamentSearch, tournamentFilters, tournamentSort]);
+
+    // Calculate paginated tournaments
+    const paginatedTournaments = useMemo(() => {
+        const startIndex = (currentTournamentPage - 1) * tournamentsPerPage;
+        const endIndex = startIndex + tournamentsPerPage;
+        return filteredTournaments.slice(startIndex, endIndex);
+    }, [filteredTournaments, currentTournamentPage]);
+
+    const totalTournamentPages = Math.ceil(filteredTournaments.length / tournamentsPerPage);
+
+    // Handler functions
+    const handleTournamentSearch = (searchTerm) => {
+        setTournamentSearch(searchTerm);
+        setCurrentTournamentPage(1); // Reset to first page on search
+    };
+
+    const handleTournamentFilterChange = (filters) => {
+        setTournamentFilters(filters);
+        setCurrentTournamentPage(1); // Reset to first page on filter
+    };
+
+    const handleTournamentSort = (sortKey, direction) => {
+        setTournamentSort({ key: sortKey, direction });
+    };
+
+    const handleTournamentPageChange = (page) => {
+        setCurrentTournamentPage(page);
+    };
 
     if (!team && isFetchingDetails) {
         return (
@@ -173,14 +456,8 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
     }, [teamBookings]);
 
     // Paginated tournaments
-    const paginatedTournaments = useMemo(() => {
-        const allTournaments = teamTournaments?.results || [];
-        const startIndex = (currentTournamentPage - 1) * tournamentsPerPage;
-        const endIndex = startIndex + tournamentsPerPage;
-        return allTournaments.slice(startIndex, endIndex);
-    }, [teamTournaments, currentTournamentPage]);
 
-    const totalTournamentPages = Math.ceil((teamTournaments?.results || []).length / tournamentsPerPage);
+
 
     const formatDate = (dateTime) => {
         if (!dateTime) return 'N/A';
@@ -205,20 +482,18 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
     const formatAmount = (amount) => {
         const num = parseFloat(amount);
         if (isNaN(num)) return 'AED 0';
-        return `${num >= 0 ? '' : '-'}AED ${Math.abs(num).toLocaleString()}`;
+        return `AED ${Math.abs(num).toLocaleString()}`;
     };
 
     const getStatusBadge = (status) => {
         const statusConfig = {
-            confirmed: { color: 'bg-green-100 text-green-700', icon: CheckCircle, label: 'Confirmed' },
-            pending: { color: 'bg-yellow-100 text-yellow-700', icon: Clock, label: 'Pending' },
-            cancelled: { color: 'bg-red-100 text-red-700', icon: XCircle, label: 'Cancelled' }
+            confirmed: { color: 'bg-primary-100 text-primary-700', label: 'Confirmed' },
+            pending: { color: 'bg-yellow-100 text-yellow-700', label: 'Pending' },
+            cancelled: { color: 'bg-red-100 text-red-700', label: 'Cancelled' }
         };
         const config = statusConfig[status?.toLowerCase()] || statusConfig.pending;
-        const Icon = config.icon;
         return (
-            <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium ${config.color}`}>
-                <Icon className="w-3 h-3" />
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${config.color}`}>
                 {config.label}
             </span>
         );
@@ -226,17 +501,17 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
 
     const getTournamentStatusBadge = (status) => {
         const statusColors = {
-            won: 'bg-green-100 text-green-700',
+            won: 'bg-primary-100 text-primary-700',
+            completed: 'bg-gray-100 text-gray-700',
+            ongoing: 'bg-primary-300 text-white',
+            upcoming: 'bg-secondary-600 text-white',
             qualify: 'bg-yellow-100 text-yellow-700',
             lost: 'bg-red-100 text-red-700',
-            ongoing: 'bg-blue-100 text-blue-700',
-            upcoming: 'bg-purple-100 text-purple-700',
-            completed: 'bg-gray-100 text-gray-700',
-            active: 'bg-green-100 text-green-700',
+            active: 'bg-primary-100 text-primary-700',
             inactive: 'bg-gray-100 text-gray-700'
         };
         return (
-            <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100 text-gray-700'}`}>
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColors[status] || 'bg-gray-100 text-gray-700'}`}>
                 {status?.charAt(0).toUpperCase() + status?.slice(1)}
             </span>
         );
@@ -257,304 +532,170 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
         handleWhatsAppClick(phone, message);
     };
 
-    const getStatusColor = (isActive) => {
-        return isActive
-            ? 'bg-green-50 text-green-700 border-green-200'
-            : 'bg-gray-50 text-gray-700 border-gray-200';
-    };
-
-    const handleSuspend = async () => {
+    const handleUpdateTeam = async (updates) => {
         try {
-            const confirmed = await showConfirm({
-                title: "Suspend Team",
-                text: "Are you sure you want to suspend this team? Members won't be able to participate in tournaments.",
-                confirmButtonText: "Yes, suspend team",
-                cancelButtonText: "Cancel",
-                icon: "warning"
-            });
-
-            if (confirmed) {
-                setIsActionLoading(true);
-                await teamService.suspendTeam(team.id);
-                toast.success('Team suspended successfully');
-                if (onRefresh) onRefresh();
-                if (onBack) onBack();
-            }
-        } catch (err) {
-            toast.error('Failed to suspend team: ' + err.message);
-        } finally {
-            setIsActionLoading(false);
-        }
-    };
-
-    const handleReactivate = async () => {
-        try {
-            const confirmed = await showConfirm({
-                title: "Reactivate Team",
-                text: "Are you sure you want to reactivate this team?",
-                confirmButtonText: "Yes, reactivate",
-                cancelButtonText: "Cancel",
-                icon: "info"
-            });
-
-            if (confirmed) {
-                setIsActionLoading(true);
-                await teamService.reactivateTeam(team.id);
-                toast.success('Team reactivated successfully');
-                if (onRefresh) onRefresh();
-                if (onBack) onBack();
-            }
-        } catch (err) {
-            toast.error('Failed to reactivate team: ' + err.message);
-        } finally {
-            setIsActionLoading(false);
+            await teamService.updateTeam(team.id, updates);
+            toast.success('Team updated successfully');
+            if (onRefresh) onRefresh();
+        } catch (error) {
+            toast.error('Failed to update team: ' + error.message);
+            throw error;
         }
     };
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header Section */}
-            <div className="bg-white mx-4 rounded-xl">
-                <div className="mx-auto px-4 sm:px-4 lg:py-3 py-1">
-                    <div className="flex flex-col items-start justify-between gap-2">
-                        <div className="flex items-center gap-4">
-                            <button
-                                onClick={onBack}
-                                className="flex items-center gap-2 text-primary-700 hover:text-primary-600 transition-colors"
-                            >
-                                <ArrowIcon direction="left" size="lg" />
-                                <span className="font-medium">Back to Teams</span>
-                            </button>
-                        </div>
-                    </div>
+        <div className="min-h-screen xl:px-5  bg-gray-50">
+            {/* Header */}
+            <div className="bg-white border-b border-gray-200">
+                <div className=" mx-auto  py-4">
+                    <button
+                        onClick={onBack}
+                        className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                    >
+                        <ArrowIcon size={'lg'}/>
+                        Back to Teams
+                    </button>
                 </div>
             </div>
 
             {/* Main Content */}
-            <div className="mx-auto px-4 sm:px-4 py-4 sm:py-6">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                    {/* Left Column - Team Profile */}
+            <div className=" mx-auto py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {/* Left Sidebar - Team Info */}
                     <div className="lg:col-span-1">
-                        <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 lg:sticky lg:top-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="font-bold text-gray-900 text-base sm:text-lg">Team Profile</h3>
-                                <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                                    <MoreVertical size={20} />
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-6 sticky top-6">
+                            {/* Team Logo & Name */}
+                            <div className="text-center mb-6">
+                                {team.logo ? (
+                                    <img src={team.logo} alt={team.name} className="w-20 h-20 rounded-full mx-auto mb-4 border-4 border-primary-100 object-cover" />
+                                ) : (
+                                    <div className="w-20 h-20 rounded-full bg-primary-500 flex items-center justify-center mx-auto mb-4">
+                                        <Shield className="w-10 h-10 text-white" />
+                                    </div>
+                                )}
+                                <h2 className="text-xl font-bold text-gray-900 mb-2">{team.name}</h2>
+                                <p className="text-sm text-gray-500 mb-3">ID: TM{String(team.id).padStart(5, '0')}</p>
+
+                                <div className="flex items-center justify-center gap-2 mb-4">
+                                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold ${
+                                        team.is_active ? 'bg-primary-100 text-primary-700' : 'bg-gray-100 text-gray-700'
+                                    }`}>
+                                        {team.is_active ? 'Active' : 'Inactive'}
+                                    </span>
+                                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 ${
+                                        team.private ? 'bg-secondary-600 text-white' : 'bg-primary-100 text-primary-700'
+                                    }`}>
+                                        {team.private ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                                        {team.private ? 'Private' : 'Public'}
+                                    </span>
+                                </div>
+
+                                <button
+                                    onClick={() => setIsEditModalOpen(true)}
+                                    className="w-full px-4 py-2 bg-primary-500 text-white rounded-lg font-medium hover:bg-primary-600 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Edit2 className="w-4 h-4" />
+                                    Edit Team
                                 </button>
                             </div>
 
-                            {/* Team Logo */}
-                            <div className="flex flex-col items-center text-center mb-6 pb-6 border-b border-gray-100">
-                                <div className="relative mb-4">
-                                    {team.logo ? (
-                                        <img
-                                            src={team.logo}
-                                            alt={team.name}
-                                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-gray-100 shadow-md"
-                                        />
-                                    ) : (
-                                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-primary-100 flex items-center justify-center border-4 border-gray-100 shadow-md">
-                                            <Shield size={32} className="text-primary-600" />
-                                        </div>
-                                    )}
+                            {/* Stats */}
+                            <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Users className="w-4 h-4 text-gray-400" />
+                                        <span className="text-sm text-gray-600">Members</span>
+                                    </div>
+                                    <span className="text-sm font-semibold text-gray-900">{team.number_of_members || 0}</span>
                                 </div>
-
-                                <h4 className="font-bold text-gray-900 text-lg sm:text-xl mb-2">
-                                    {team.name}
-                                </h4>
-                                <span className={`px-3 py-1 rounded-lg text-xs sm:text-sm font-semibold border ${getStatusColor(team.is_active)}`}>
-                                    {team.is_active ? 'ACTIVE' : 'INACTIVE'}
-                                </span>
-                            </div>
-
-                            {/* Team Information */}
-                            <div className="space-y-4 mb-6 pb-6 border-b border-gray-100">
-                                <h4 className="font-semibold text-gray-900 text-xs sm:text-sm uppercase tracking-wide">
-                                    Team Details
-                                </h4>
-                                <div className="space-y-3">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <Shield size={16} className="text-gray-600" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-xs text-gray-500 font-medium mb-0.5">Team ID</p>
-                                            <p className="text-xs sm:text-sm text-gray-900">
-                                                TM{String(team.id).padStart(5, '0')}
-                                            </p>
-                                        </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Activity className="w-4 h-4 text-gray-400" />
+                                        <span className="text-sm text-gray-600">Matches</span>
                                     </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <Calendar size={16} className="text-gray-600" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-xs text-gray-500 font-medium mb-0.5">Created</p>
-                                            <p className="text-xs sm:text-sm text-gray-900">
-                                                {formatDate(team.created_at)}
-                                            </p>
-                                        </div>
+                                    <span className="text-sm font-semibold text-gray-900">{team.num_of_matches || 0}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Trophy className="w-4 h-4 text-gray-400" />
+                                        <span className="text-sm text-gray-600">Tournaments</span>
                                     </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <Users size={16} className="text-gray-600" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-xs text-gray-500 font-medium mb-0.5">Members</p>
-                                            <p className="text-xs sm:text-sm text-gray-900">
-                                                {team.number_of_members || 0} Players
-                                            </p>
-                                        </div>
+                                    <span className="text-sm font-semibold text-gray-900">{team.num_of_tournaments || 0}</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Star className="w-4 h-4 text-gray-400" />
+                                        <span className="text-sm text-gray-600">Points</span>
                                     </div>
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                            <Trophy size={16} className="text-gray-600" />
-                                        </div>
-                                        <div className="flex-1">
-                                            <p className="text-xs text-gray-500 font-medium mb-0.5">Tournaments</p>
-                                            <p className="text-xs sm:text-sm text-gray-900">
-                                                {team.num_of_tournaments || 0}
-                                            </p>
-                                        </div>
-                                    </div>
+                                    <span className="text-sm font-semibold text-primary-600">{team.num_of_points || 0}</span>
                                 </div>
                             </div>
 
-                            {/* Team Leader Info */}
+                            {/* Team Leader */}
                             {team.team_leader && (
-                                <div className="space-y-4 mb-6 pb-6 border-b border-gray-100">
-                                    <h4 className="font-semibold text-gray-900 text-xs sm:text-sm uppercase tracking-wide">
-                                        Team Leader
-                                    </h4>
-                                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                <div className="mb-6">
+                                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Team Leader</h4>
+                                    <div className="flex items-center gap-3 mb-3">
                                         {team.team_leader.image ? (
-                                            <img
-                                                src={team.team_leader.image}
-                                                alt={team.team_leader.name}
-                                                className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
-                                            />
+                                            <img src={team.team_leader.image} alt={team.team_leader.name} className="w-10 h-10 rounded-full object-cover" />
                                         ) : (
-                                            <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center">
-                                                <User size={20} className="text-primary-600" />
+                                            <div className="w-10 h-10 rounded-full bg-primary-500 flex items-center justify-center text-white font-semibold">
+                                                {team.team_leader.name?.charAt(0)?.toUpperCase()}
                                             </div>
                                         )}
                                         <div className="flex-1">
-                                            <p className="font-medium text-gray-900 text-sm">
-                                                {team.team_leader.name}
-                                            </p>
-                                            <p className="text-xs text-gray-500 truncate">
-                                                {team.team_leader.email || 'No email'}
-                                            </p>
+                                            <p className="text-sm font-semibold text-gray-900">{team.team_leader.name}</p>
+                                            <p className="text-xs text-gray-500 truncate">{team.team_leader.email}</p>
                                         </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {team.team_leader?.email && (
+                                            <button
+                                                onClick={handleCreatorEmail}
+                                                className="w-full px-3 py-2 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+                                            >
+                                                <Mail className="w-4 h-4" />
+                                                Email
+                                            </button>
+                                        )}
+                                        {team.team_leader?.phone && (
+                                            <button
+                                                onClick={handleCreatorWhatsApp}
+                                                className="w-full px-3 py-2 bg-primary-50 hover:bg-primary-100 text-primary-700 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-colors"
+                                            >
+                                                <Phone className="w-4 h-4" />
+                                                WhatsApp
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             )}
 
-                            {/* Quick Actions */}
-                            <div className="space-y-3">
-                                {team.team_leader?.email && (
-                                    <button
-                                        onClick={handleCreatorEmail}
-                                        className="w-full px-4 py-2.5 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-                                    >
-                                        <Mail size={16} />
-                                        Email Leader
-                                    </button>
-                                )}
-                                {team.team_leader?.phone && (
-                                    <button
-                                        onClick={handleCreatorWhatsApp}
-                                        className="w-full px-4 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center gap-2 text-sm font-medium"
-                                    >
-                                        <Phone size={16} />
-                                        WhatsApp
-                                    </button>
-                                )}
+                            {/* Created Date */}
+                            <div className="text-xs text-gray-500">
+                                <Calendar className="w-3 h-3 inline-block mr-1" />
+                                Created {formatDate(team.created_at)}
                             </div>
                         </div>
                     </div>
 
-                    {/* Right Column - Team Details */}
-                    <div className="lg:col-span-2 space-y-6">
-                        {/* Team Header Info */}
-                        <div className="bg-white rounded-xl shadow-md p-4 sm:p-6">
-                            <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
-                                <div className="flex-1 w-full">
-                                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mb-2">
-                                        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-                                            {team.name}
-                                        </h1>
-                                        <span className={`w-fit px-3 py-1 rounded-lg text-xs sm:text-sm font-semibold border ${getStatusColor(team.is_active)}`}>
-                                            {team.is_active ? 'ACTIVE' : 'INACTIVE'}
-                                        </span>
-                                    </div>
-                                    <div className="text-left flex flex-wrap gap-4 text-xs sm:text-sm text-gray-500">
-                                        <p>ID: TM{String(team.id).padStart(5, '0')}</p>
-                                        <p>Created: {formatDate(team.created_at)}</p>
-                                        <p>Type: {team.private ? '🔒 Private' : '🌐 Public'}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Team Stats */}
-                        <div className="bg-white rounded-xl shadow-md overflow-hidden">
-                            <div className="bg-primary-50 p-4 m-4 gap-5 rounded-xl">
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                                        <h3 className="text-xs font-semibold text-gray-500 mb-1">Members</h3>
-                                        <p className="text-2xl font-bold text-gray-900">
-                                            {team.number_of_members || 0}
-                                        </p>
-                                    </div>
-                                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                                        <h3 className="text-xs font-semibold text-gray-500 mb-1">Matches</h3>
-                                        <p className="text-2xl font-bold text-gray-900">
-                                            {team.num_of_matches || 0}
-                                        </p>
-                                    </div>
-                                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                                        <h3 className="text-xs font-semibold text-gray-500 mb-1">Tournaments</h3>
-                                        <p className="text-2xl font-bold text-gray-900">
-                                            {team.num_of_tournaments || 0}
-                                        </p>
-                                    </div>
-                                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                                        <h3 className="text-xs font-semibold text-gray-500 mb-1">Points</h3>
-                                        <p className="text-2xl font-bold text-gray-900">
-                                            {team.num_of_points || 0}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
+                    {/* Right Content Area */}
+                    <div className="lg:col-span-2 xl:col-span-3 space-y-6">
                         {/* Bookings Section */}
-                        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-                            <div className="bg-gradient-to-r from-primary-50 to-white border-b border-gray-100 p-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
-                                            <Calendar className="w-5 h-5 text-white" />
-                                        </div>
-                                        <h3 className="text-xl font-bold text-gray-900">Team Bookings</h3>
-                                    </div>
-                                    <div className="text-sm text-gray-500">
-                                        Showing {filteredBookings.length} bookings for {formatDate(bookingDate)}
-                                    </div>
-                                </div>
-
-                                <div className="flex flex-wrap items-center gap-3">
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+                            <div className="p-3 px-5 w-full  flex flex-wrap justify-between items-center border-b border-gray-200">
+                                <h3 className="text-lg w-48 font-bold text-gray-900 mb-4"> Bookings</h3>
+                                <div className="order-3 w-full xl:w-fit  flex justify-center xl:order-2">
                                     <ReusableDatePicker
                                         selectedDate={bookingDate}
                                         onDateChange={setBookingDate}
                                         disabled={bookingsLoading}
-                                    />
-
+                                    /></div>
+                                <div className={'order-2 xl:order-3'}>
                                     <select
                                         value={bookingStatus}
                                         onChange={(e) => setBookingStatus(e.target.value)}
-                                        className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+                                        className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                                     >
                                         <option value="all">All Status</option>
                                         <option value="confirmed">Confirmed</option>
@@ -563,16 +704,15 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
                                     </select>
                                 </div>
                             </div>
-
                             <div className="p-6">
                                 {bookingsLoading ? (
                                     <div className="flex justify-center py-12">
                                         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500"></div>
                                     </div>
                                 ) : filteredBookings.length > 0 ? (
-                                    <div className="space-y-4">
+                                    <div className="space-y-3">
                                         {filteredBookings.map((booking) => (
-                                            <div key={booking.id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
+                                            <div key={booking.id} className="border border-gray-200 rounded-lg p-4 hover:border-primary-300 transition-colors">
                                                 <div className="flex items-start justify-between mb-3">
                                                     <div>
                                                         <div className="flex items-center gap-2 mb-1">
@@ -583,23 +723,22 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
                                                     </div>
                                                     <p className="text-lg font-bold text-primary-600">{formatAmount(booking.total_price || 0)}</p>
                                                 </div>
-
-                                                <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <MapPin className="w-4 h-4 text-gray-400" />
-                                                        <span className="text-gray-600">{booking.pitch?.translations?.name || booking.pitch_name || 'N/A'}</span>
+                                                <div className="grid grid-cols-2 gap-3 text-sm">
+                                                    <div className="flex items-center gap-2 text-gray-600">
+                                                        <MapPin className="w-4 h-4" />
+                                                        {booking.pitch?.translations?.name || 'N/A'}
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <Clock className="w-4 h-4 text-gray-400" />
-                                                        <span className="text-gray-600">{formatDateTime(booking.start_time)}</span>
+                                                    <div className="flex items-center gap-2 text-gray-600">
+                                                        <Clock className="w-4 h-4" />
+                                                        {formatDateTime(booking.start_time)}
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <Users className="w-4 h-4 text-gray-400" />
-                                                        <span className="text-gray-600">{booking.max_players || 0} Players</span>
+                                                    <div className="flex items-center gap-2 text-gray-600">
+                                                        <Users className="w-4 h-4" />
+                                                        {booking.max_players || 0} Players
                                                     </div>
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <Award className="w-4 h-4 text-gray-400" />
-                                                        <span className="text-gray-600">{booking.play_kind?.translations?.name || booking.play_type || 'N/A'}</span>
+                                                    <div className="flex items-center gap-2 text-gray-600">
+                                                        <Award className="w-4 h-4" />
+                                                        {booking.play_kind?.translations?.name || 'N/A'}
                                                     </div>
                                                 </div>
                                             </div>
@@ -607,152 +746,99 @@ const TeamDetailView = ({ team: initialTeam, onBack, onRefresh }) => {
                                     </div>
                                 ) : (
                                     <div className="text-center py-12">
-                                        <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-3" />
+                                        <Calendar className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                                         <p className="text-gray-500">No bookings found for {formatDate(bookingDate)}</p>
+                                        <p className="text-sm text-gray-400 mt-1">Try selecting a different date or status</p>
                                     </div>
                                 )}
                             </div>
                         </div>
 
-                        {/* Tournaments Section */}
-                        <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
-                            <div className="bg-gradient-to-r from-amber-50 to-white border-b border-gray-100 p-6">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center">
-                                        <Trophy className="w-5 h-5 text-white" />
-                                    </div>
-                                    <h3 className="text-xl font-bold text-gray-900">Tournaments</h3>
-                                </div>
+                        {/* Tournaments Table */}
+                        <div className="bg-white px-4 rounded-lg shadow-sm border border-gray-100">
+                            <div className="pt-5 lg:px-6 flex justify-between items-center">
+                                <h3 className="text-lg font-bold text-gray-900">Tournaments </h3>
+                                <p className="text-sm text-gray-500 mt-1">Total : {filteredTournaments.length} tournaments</p>
                             </div>
 
+                            {tournamentsLoading ? (
+                                <div className="flex justify-center ">
+                                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500"></div>
+                                </div>
+                            ) : filteredTournaments.length > 0 ? (
+                                <MainTable
+                                    columns={tournamentColumns}
+                                    data={paginatedTournaments}
+                                    currentPage={currentTournamentPage}
+                                    itemsPerPage={tournamentsPerPage}
+                                    totalItems={filteredTournaments.length}
+                                    onPageChange={handleTournamentPageChange}
+                                    showSearch ={false}
+                                onSort={handleTournamentSort}
+                                />
+                            ) : (
+                                <div className="text-center py-12">
+                                    <Trophy className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                    <p className="text-gray-500">No tournaments found</p>
+                                    <p className="text-sm text-gray-400 mt-1">This team hasn't participated in any tournaments yet</p>
+                                </div>
+                            )}
+                        </div>
+                        {/* Members Section */}
+                        <div className="bg-white rounded-lg shadow-sm border border-gray-100">
+                            <div className="p-6 flex justify-between items-center border-b border-gray-200">
+                                <h3 className="text-lg font-bold text-gray-900">Team Members</h3>
+                                <p className="text-sm text-gray-500 mt-1">Total : {team.members?.length || 0} players</p>
+                            </div>
                             <div className="p-6">
-                                {tournamentsLoading ? (
-                                    <div className="flex justify-center py-12">
-                                        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-primary-500"></div>
-                                    </div>
-                                ) : paginatedTournaments.length > 0 ? (
-                                    <>
-                                        <div className="space-y-4">
-                                            {paginatedTournaments.map((tournament) => (
-                                                <div key={tournament.id} className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-md transition-shadow">
-                                                    <div className="p-4">
-                                                        <div className="flex items-start justify-between mb-3">
-                                                            <div className="flex-1">
-                                                                <div className="flex items-center gap-2 mb-1">
-                                                                    <h4 className="font-semibold text-gray-900">{tournament.name}</h4>
-                                                                    {getTournamentStatusBadge(tournament.status)}
-                                                                </div>
-                                                                <p className="text-sm text-gray-500">{tournament.subtitle || tournament.description || 'No description available'}</p>
-                                                            </div>
-                                                        </div>
-
-                                                        <div className="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-gray-100">
-                                                            <div className="text-sm">
-                                                                <p className="text-gray-500 mb-1">Start Date</p>
-                                                                <p className="font-medium text-gray-900">{formatDate(tournament.start_date)}</p>
-                                                            </div>
-                                                            <div className="text-sm">
-                                                                <p className="text-gray-500 mb-1">Entry Fee</p>
-                                                                <p className="font-bold text-primary-600">{formatAmount(tournament.entry_fee || 0)}</p>
-                                                            </div>
-                                                            <div className="text-sm">
-                                                                <p className="text-gray-500 mb-1">Max Teams</p>
-                                                                <p className="font-medium text-gray-900">{tournament.max_teams || 'N/A'}</p>
-                                                            </div>
-                                                            <div className="text-sm">
-                                                                <p className="text-gray-500 mb-1">Format</p>
-                                                                <p className="font-medium text-gray-900 capitalize">{tournament.scoring_system || tournament.format || 'N/A'}</p>
-                                                            </div>
-                                                        </div>
+                                {team.members && team.members.length > 0 ? (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                                        {team.members.map((member, idx) => (
+                                            <div key={idx} className="flex flex-col items-center text-center p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-all duration-200 border border-gray-100">
+                                                {member.user_info?.image ? (
+                                                    <img
+                                                        src={member.user_info.image}
+                                                        alt={member.user_info.name}
+                                                        className="w-16 h-16 rounded-full object-cover border-3 border-white shadow-md mb-3"
+                                                    />
+                                                ) : (
+                                                    <div className="w-16 h-16 rounded-full bg-primary-500 flex items-center justify-center text-white font-bold text-xl border-3 border-white shadow-md mb-3">
+                                                        {(member.user_info?.name || member.name)?.charAt(0)?.toUpperCase() || 'P'}
                                                     </div>
+                                                )}
+                                                <p className="text-sm font-bold text-gray-900 truncate w-full">
+                                                    {member.user_info?.name || member.name}
+                                                </p>
+                                                <div className="mt-2">
+                                                    {member.is_admin ? (
+                                                        <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-primary-100 text-primary-700">Admin</span>
+                                                    ) : (
+                                                        <span className="inline-block px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">Player</span>
+                                                    )}
                                                 </div>
-                                            ))}
-                                        </div>
-                                        <Pagination
-                                            currentPage={currentTournamentPage}
-                                            totalPages={totalTournamentPages}
-                                            onPageChange={setCurrentTournamentPage}
-                                        />
-                                    </>
+                                            </div>
+                                        ))}
+                                    </div>
                                 ) : (
                                     <div className="text-center py-12">
-                                        <Trophy className="w-16 h-16 text-gray-300 mx-auto mb-3" />
-                                        <p className="text-gray-500">No tournaments found</p>
+                                        <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                        <p className="text-gray-500">No team members yet</p>
+                                        <p className="text-sm text-gray-400 mt-1">Team leader can invite players to join</p>
                                     </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Members Section */}
-                        {team.members && team.members.length > 0 ? (
-                            <div className="bg-white rounded-xl shadow-md p-6">
-                                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 text-base">
-                                    <Users size={18} className="text-primary-600" />
-                                    Team Members ({team.members.length})
-                                </h4>
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                    {team.members.map((member, idx) => (
-                                        <div key={idx} className="flex flex-col items-center text-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                                            {member.user_info?.image ? (
-                                                <img
-                                                    src={member.user_info.image}
-                                                    alt={member.user_info.name}
-                                                    className="w-16 h-16 rounded-full object-cover border-2 border-white shadow-sm mb-2"
-                                                />
-                                            ) : (
-                                                <div className="w-16 h-16 rounded-full bg-primary-100 flex items-center justify-center text-primary-600 font-bold border-2 border-white shadow-sm mb-2 text-xl">
-                                                    {member.name?.charAt(0)?.toUpperCase() || 'M'}
-                                                </div>
-                                            )}
-                                            <p className="text-sm font-medium text-gray-900 truncate w-full">
-                                                {member.user_info?.name || member.name}
-                                            </p>
-                                            {member.is_admin && (
-                                                <span className="text-xs text-primary-600 font-medium">Admin</span>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="bg-white rounded-xl shadow-md p-6">
-                                <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2 text-base">
-                                    <Users size={18} className="text-primary-600" />
-                                    Team Members (0)
-                                </h4>
-                                <div className="bg-gray-50 rounded-lg p-8 text-center">
-                                    <Users size={48} className="text-gray-300 mx-auto mb-3" />
-                                    <p className="text-sm text-gray-500">No members yet</p>
-                                    <p className="text-xs text-gray-400 mt-1">Team leader can invite players to join</p>
-                                </div>
-                            </div>
-                        )}
-
-                        {/* Action Buttons */}
-                        <div className="bg-white rounded-xl shadow-md p-6">
-                            <div className="flex flex-col sm:flex-row gap-3">
-                                {team.is_active ? (
-                                    <button
-                                        onClick={handleSuspend}
-                                        disabled={isActionLoading}
-                                        className="flex-1 px-4 py-3 bg-red-50 border border-red-200 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm font-semibold disabled:opacity-50"
-                                    >
-                                        {isActionLoading ? 'Processing...' : 'Suspend Team'}
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={handleReactivate}
-                                        disabled={isActionLoading}
-                                        className="flex-1 px-4 py-3 bg-green-50 border border-green-200 text-green-600 rounded-lg hover:bg-green-100 transition-colors text-sm font-semibold disabled:opacity-50"
-                                    >
-                                        {isActionLoading ? 'Processing...' : 'Reactivate Team'}
-                                    </button>
                                 )}
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            {/* Edit Modal */}
+            <EditModal
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onSave={handleUpdateTeam}
+                team={team}
+            />
         </div>
     );
 };

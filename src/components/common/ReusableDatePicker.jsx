@@ -164,7 +164,7 @@ const ReusableDatePicker = ({
 
                 <button
                     onClick={() => setShowPicker(!showPicker)}
-                    className="text-sm font-medium text-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
+                    className="text-sm  text-gray-900 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-colors flex items-center gap-2"
                     disabled={disabled}
                 >
                     <Calendar className="w-4 h-4 text-primary-600" />
@@ -204,7 +204,7 @@ const ReusableDatePicker = ({
 
             <button
                 onClick={() => setShowPicker(!showPicker)}
-                className="text-lg font-semibold text-gray-900 min-w-[200px] text-center px-3 py-1 rounded-lg hover:bg-gray-100 transition-colors"
+                className="text-sm lg:text-lg font-semibold text-gray-900 lg:min-w-[200px] text-center lg:px-3 py-1 rounded-lg hover:bg-gray-100 transition-colors"
                 disabled={disabled}
             >
                 {DateFormatter.toDisplay(selectedDate)}
@@ -213,7 +213,7 @@ const ReusableDatePicker = ({
             {showTodayButton && (
                 <button
                     onClick={setToday}
-                    className="px-4 py-2 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-medium rounded-xl hover:shadow-lg hover:shadow-primary-500/30 transition-all disabled:opacity-50"
+                    className="lg:px-4 lg:py-2 px-2 py-1 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm lg:text-base rounded-xl hover:shadow-lg hover:shadow-primary-500/30 transition-all disabled:opacity-50"
                     disabled={disabled}
                 >
                     Today
