@@ -77,9 +77,15 @@ export const pitchOwnersService = {
     // ==========================
 
     // GET /user/staff-actions/
-    getAllStaffActions: async (params = {}) => {
+    getAllStaffActions: async (id, page = 1,actionsLimit) => {
         try {
-            const response = await api.get(ACTIONS_BASE_URL, { params });
+            const response = await api.get(ACTIONS_BASE_URL, {
+                params: {
+                    stuff: id,
+                    page: page,
+                    page_limit:actionsLimit
+                }
+            });
             return response.data;
         } catch (error) {
             console.error(error);

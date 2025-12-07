@@ -305,7 +305,7 @@ const PitchOwnerForm = ({ onCancel, onSuccess, initialData = null }) => {
                         <MapPin size={20} /> Pitch Details
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="md:col-span-2">
+                        <div className="">
                             <MainInput
                                 label="Pitch Name"
                                 name="name"
@@ -317,7 +317,7 @@ const PitchOwnerForm = ({ onCancel, onSuccess, initialData = null }) => {
                             />
                         </div>
 
-                        <div className="md:col-span-2">
+                        <div className="">
                             <MainInput
                                 label="Pitch Address"
                                 name="address"
@@ -359,7 +359,7 @@ const PitchOwnerForm = ({ onCancel, onSuccess, initialData = null }) => {
                 {/* Section 3: Contact & Financials */}
                 <div className="space-y-6">
                     <h3 className="text-lg font-semibold text-secondary-600 border-b pb-2 flex items-center gap-2">
-                        <CreditCard size={20} /> Contact & Financials
+                        <CreditCard size={20}/> Contact & Financials
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <MainInput
@@ -404,25 +404,15 @@ const PitchOwnerForm = ({ onCancel, onSuccess, initialData = null }) => {
                             icon={Percent}
                             placeholder="e.g. 10"
                         />
-
-                        <div className="flex flex-col justify-end pb-2">
-                            <label className="flex items-center cursor-pointer gap-3 bg-gray-50 p-3 rounded-lg border border-gray-200 hover:border-primary-300 transition-colors">
-                                <div className={`transition-colors ${formData.is_active ? 'text-green-600' : 'text-gray-400'}`}>
-                                    {formData.is_active ? <ToggleRight size={40} /> : <ToggleLeft size={40} />}
-                                </div>
-                                <span className="font-medium text-gray-700">
-                                    {formData.is_active ? "Active Status" : "Inactive Status"}
-                                </span>
-                                <input
-                                    type="checkbox"
-                                    name="is_active"
-                                    checked={formData.is_active}
-                                    onChange={handleChange}
-                                    className="hidden"
-                                />
-                            </label>
+                    </div>
+                    {/* Status */}
+                    <div className="bg-primary-50 p-6 rounded-lg space-y-4 border border-primary-100">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <MainInput type="checkbox" label="Is Active ?" name="is_active" value={formData.is_active} onChange={handleChange} />
                         </div>
                     </div>
+
+
                 </div>
 
                 {/* Section 4: Image Upload */}
@@ -438,7 +428,8 @@ const PitchOwnerForm = ({ onCancel, onSuccess, initialData = null }) => {
                         ${errors.image ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-primary-500'}
                         ${isImageUploading ? 'cursor-wait bg-gray-50' : 'cursor-pointer'}`}
                     >
-                        <input type="file" hidden ref={fileInputRef} accept="image/*" onChange={onFileChange} disabled={isImageUploading} />
+                        <input type="file" hidden ref={fileInputRef} accept="image/*" onChange={onFileChange}
+                               disabled={isImageUploading}/>
 
                         {isImageUploading ? (
                             <div className="flex flex-col items-center justify-center">
