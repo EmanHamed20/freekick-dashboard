@@ -87,8 +87,8 @@ const Sidebar = ({ onToggle }) => {
             items: [
                 { icon: Users, label: t('menu_items.players'), path: '/players' },
                 { icon: Users, label:'Teams', path: '/teams' },
-                { icon: UserCheck, label: t('menu_items.pitch_owners'), path: '/pitch-stuff' },
-                { icon: FileEdit, label: t('menu_items.venue_requests'), path: '/venue-requests' },
+                { icon: UserCheck, label: t('menu_items.pitch_owners'), path: '/pitch-owner' },
+                { icon: FileEdit, label: t('menu_items.venue_requests'), path: '/venue-edit-requests' },
             ]
         },
         {
