@@ -41,6 +41,8 @@ import AppsNotifications from "../pages/AppsNotifications/AppsNotifications.jsx"
 import RevenueOverview from "../pages/RevenueOverview/RevenueOverview.jsx";
 import PitchOwnerDetails from "../components/pitchOwners/PitchOwnerDetails.jsx";
 import Reports from "../pages/Reports/Reports.jsx";
+import VenueEditRequests from "../pages/VenueEditRequests/VenueEditRequests.jsx";
+import VenueEditRequestDetails from "../components/venueEditRequestDetails/venueEditRequestDetails.jsx";
 
 
 const router = createBrowserRouter([
@@ -77,7 +79,15 @@ const router = createBrowserRouter([
             },
             {
                 path: 'venues/venue-details',
-                element: <VenueDetails />, // Venue detail page
+                element: <VenueDetails />,
+            },
+            {
+                path: 'venue-edit-requests',
+                element: <VenueEditRequests />,
+            },
+            {
+                path: 'venue-edit-requests/venue-request-details',
+                element: <VenueEditRequestDetails />,
             },
             {
                 path: 'pitches',
