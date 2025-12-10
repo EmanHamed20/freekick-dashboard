@@ -133,7 +133,7 @@ const PitchProfileCard = ({ pitch, venueName, t, currentLang }) => {
             <div className="p-4 sm:p-6 text-center bg-gray-50/50">
                 <p className="text-[10px] sm:text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">{t('card.pricePerHour', 'Price Per Hour')}</p>
                 <div className="text-2xl sm:text-3xl font-extrabold text-primary-600 flex items-center justify-center gap-1">
-                    <span className="text-base sm:text-lg text-gray-400 font-medium">$</span>
+                    <span className="text-base sm:text-lg text-gray-400 font-medium">{t(`card.priceAED`)}</span>
                     {Math.floor(Number(pitch.price_per_hour))}
                     <span className="text-xs text-gray-400 font-normal self-end mb-1">.00</span>
                 </div>
