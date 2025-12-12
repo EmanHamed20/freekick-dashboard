@@ -2,7 +2,7 @@ import {useEffect, useState} from 'react';
 import {
     ArrowLeft, Calendar, CheckCircle, Clock, CreditCard,
     Mail, MapPin, Phone, Printer, Send, Users, MoreVertical,
-    Shield, Globe, Trophy, Bell,Building, Download, Share2
+    Shield, Globe, Trophy, Bell, Building, Download, Share2
 } from "lucide-react";
 import { bookingService } from "../../services/bookings/bookingService.js";
 import { useBooking } from "../../hooks/useBookings.js";
@@ -16,7 +16,8 @@ import {  clearCancelStatus } from "../../features/bookings/bookingSlice";
 import { showConfirm } from "../../components/showConfirm.jsx";
 import {toast} from "react-toastify";
 import {useLocation, useNavigate} from "react-router-dom";
-import  {IMAGE_BASE_URL} from '../../utils/ImageBaseURL.js'
+// 导入图像工具函数
+import { getImageUrl } from '../../utils/imageUtils.js';
 
 const BookingDetailView = () => {
     const location = useLocation();
@@ -30,15 +31,20 @@ const BookingDetailView = () => {
     const bookingId = bookingFromState?.id || location.state?.bookingId;
 
     // Fetch booking data - use booking from state if available, otherwise fetch by ID
-    const { booking: fetchedBooking, isLoading: isFetchingDetails, error: fetchError } = useBooking(bookingId);
-
+    const {
+        booking: fetchedBooking,
+        isLoading: isFetchingDetails,
+        error: fetchError,
+        refetch // Add this
+    } = useBooking(bookingId);
     const { handleEmailClick, handleWhatsAppClick } = useContact();
     const { componentRef, handlePrint } = usePrint();
     const dispatch = useDispatch();
 
     // Use booking from state if available, otherwise use fetched data
-    const booking =  fetchedBooking;
+    const booking = fetchedBooking;
     const [isActionLoading, setIsActionLoading] = useState(false);
+    const [imageErrors, setImageErrors] = useState({});
     const { cancelStatus, cancelError } = useSelector(state => state.bookings);
 
     useEffect(() => {
@@ -62,6 +68,45 @@ const BookingDetailView = () => {
         // You can implement refresh logic if needed
         // For now, we'll just go back to the list which will refresh automatically
         navigate('/bookings');
+    };
+
+    // 辅助函数：处理图像加载失败 - FIXED VERSION
+    const handleImageError = (imageKey) => {
+        setImageErrors(prev => ({
+            ...prev,
+            [imageKey]: true
+        }));
+    };
+
+    // 获取用户首字母
+    const getInitials = (name) => {
+        if (!name) return 'U';
+        const nameParts = name.trim().split(' ');
+        if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase();
+        return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
+    };
+
+    // 获取头像颜色
+    const getAvatarColor = (name) => {
+        const nameStr = name || 'User';
+        const colors = [
+            'bg-teal-500',
+            'bg-blue-500',
+            'bg-purple-500',
+            'bg-pink-500',
+            'bg-orange-500',
+            'bg-red-500',
+            'bg-green-500',
+            'bg-indigo-500',
+        ];
+
+        let hash = 0;
+        for (let i = 0; i < nameStr.length; i++) {
+            hash = nameStr.charCodeAt(i) + ((hash << 5) - hash);
+        }
+
+        const colorIndex = Math.abs(hash) % colors.length;
+        return colors[colorIndex];
     };
 
     if (!booking && isFetchingDetails) {
@@ -146,6 +191,33 @@ const BookingDetailView = () => {
         }
     };
 
+    const handleFullPaid = async () => {
+        try {
+            const confirmed = await showConfirm({
+                title: "Mark as Full Paid",
+                text: "Are you sure you want to mark this booking as fully paid?",
+                confirmButtonText: "Yes, mark as paid",
+                cancelButtonText: "Cancel",
+                icon: "success"
+            });
+
+            if (confirmed) {
+                setIsActionLoading(true);
+                await bookingService.partialUpdate(booking.id, { mark_as_paid: true });
+
+                // Show success toast
+                toast.success('Booking marked as fully paid successfully!');
+
+                // Refetch booking data to update the UI
+                await refetch();
+            }
+        } catch (err) {
+            toast.error('Failed to mark as fully paid: ' + err.message);
+        } finally {
+            setIsActionLoading(false);
+        }
+    };
+
     const totalAmount = parseFloat(booking.total_price || 0);
     const addonsTotal = booking.booking_addons?.reduce((sum, addon) => {
         return sum + (parseFloat(addon.addon_info?.price || 0) * addon.quantity);
@@ -178,7 +250,7 @@ const BookingDetailView = () => {
             {/* Header Section */}
             <div className="bg-white mx-4 rounded-xl">
                 <div className="mx-auto px-4 sm:px-4 lg:py-3 py-1">
-                    <div className="flex flex-col items-start justify-between gap-2">
+                    <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-4">
                             <button
                                 onClick={handleBack}
@@ -187,6 +259,34 @@ const BookingDetailView = () => {
                                 <span className="font-medium">Back to Bookings</span>
                             </button>
                         </div>
+                        {role.is_admin || role.is_sub_admin ? (
+                            booking.mark_as_paid ? (
+                                <div className="flex-1 sm:flex-none px-4 py-2 bg-green-100 border border-green-300 text-green-700 rounded-2xl flex items-center justify-center gap-2">
+                                    <CheckCircle className="w-4 h-4" />
+                                    <span className="font-medium">Full Paid</span>
+                                </div>
+                            ) : (
+                                <button
+                                    onClick={handleFullPaid}
+                                    disabled={isActionLoading}
+                                    className={`flex-1 sm:flex-none px-4 py-2 bg-teal-500 text-white rounded-2xl transition-colors flex items-center justify-center gap-2 ${
+                                        isActionLoading ? 'opacity-70 cursor-not-allowed' : 'hover:bg-teal-600'
+                                    }`}
+                                >
+                                    {isActionLoading ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                            <span className="font-medium">Processing...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <CreditCard className="w-4 h-4" />
+                                            <span className="font-medium">Mark As Full Paid</span>
+                                        </>
+                                    )}
+                                </button>
+                            )
+                        ) : null}
                     </div>
                 </div>
             </div>
@@ -196,26 +296,22 @@ const BookingDetailView = () => {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                     {/* Left Column - Customer Profile */}
                     <div className="lg:col-span-1 order-1 lg:order-1">
-                        <div className="bg-white rounded-xl shadow-md p-4 sm:p-6 lg:sticky lg:top-6">
-                            <div className="flex items-center justify-between mb-6">
-                                <h3 className="font-bold text-gray-900 text-base sm:text-lg">Customer Profile</h3>
-                                <button className="text-gray-400 hover:text-gray-600 transition-colors">
-                                    <MoreVertical size={20} />
-                                </button>
-                            </div>
-
+                        <div className="bg-white rounded-xl shadow-md lg:sticky lg:top-6">
                             {/* Profile Avatar */}
-                            <div className="flex flex-col items-center text-center mb-6 pb-6 border-b border-gray-100">
+                            <div className="flex bg-primary-50 pt-8 flex-col items-center text-center mb-6 pb-6 border-b border-gray-100">
                                 <div className="relative mb-4">
-                                    {booking.user_info?.image ? (
+                                    {booking.user_info?.image && !imageErrors['customer-profile'] ? (
                                         <img
-                                            src={IMAGE_BASE_URL + booking?.user_info?.image}
-                                            alt={booking.user_info.name}
+                                            src={getImageUrl(booking.user_info?.image)}
+                                            alt={booking.user_info?.name || 'Customer Profile'}
                                             className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover border-4 border-gray-100 shadow-md"
+                                            onError={() => handleImageError('customer-profile')}
                                         />
                                     ) : (
-                                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-teal-100 flex items-center justify-center border-4 border-gray-100 shadow-md">
-                                            <Users size={32} className="text-teal-600" />
+                                        <div className={`w-20 h-20 sm:w-24 sm:h-24 rounded-full ${getAvatarColor(booking.user_info?.name)} flex items-center justify-center border-4 border-gray-100 shadow-md`}>
+                                            <span className="text-white text-2xl font-bold">
+                                                {getInitials(booking.user_info?.name)}
+                                            </span>
                                         </div>
                                     )}
                                     <div className="absolute -bottom-1 -right-1 bg-teal-500 text-white p-1.5 rounded-full shadow-lg">
@@ -237,7 +333,7 @@ const BookingDetailView = () => {
                             </div>
 
                             {/* Contact Information */}
-                            <div className="space-y-4 mb-6 pb-6 border-b border-gray-100">
+                            <div className="space-y-4 mb-6 px-5 pb-6 border-b border-gray-100">
                                 <h4 className="font-semibold text-gray-900 text-xs sm:text-sm uppercase tracking-wide">Contact Details</h4>
                                 <div className="space-y-3">
                                     <div className="flex items-start gap-3">
@@ -271,7 +367,7 @@ const BookingDetailView = () => {
                             </div>
 
                             {/* Booking Details */}
-                            <div className="space-y-3 mb-6">
+                            <div className="space-y-3 px-5 mb-6">
                                 <h4 className="font-semibold text-gray-900 text-xs sm:text-sm uppercase tracking-wide">Booking Information</h4>
                                 <div className="bg-gray-50 rounded-lg p-3 sm:p-4 space-y-2.5">
                                     <div className="flex items-center justify-between">
@@ -292,7 +388,7 @@ const BookingDetailView = () => {
                             </div>
 
                             {/* Action Buttons */}
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid px-5 pb-5 grid-cols-2 gap-3">
                                 <button
                                     onClick={handleCustomerEmail}
                                     className="px-4 py-2.5 text-xs sm:text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium flex items-center justify-center gap-2"
@@ -339,9 +435,9 @@ const BookingDetailView = () => {
                         </div>
 
                         {/* Venues Information Card */}
-                        <div className="bg-white rounded-xl   overflow-hidden">
+                        <div className="bg-white rounded-xl overflow-hidden">
                             {/* Venues Image */}
-                            <div className=" rounded-lg  ">
+                            <div className="rounded-lg">
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-center gap-4 sm:gap-8">
                                     <div className="flex items-center gap-3 w-full sm:w-auto">
                                         <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm flex-shrink-0">
@@ -371,21 +467,28 @@ const BookingDetailView = () => {
                                 </div>
                             </div>
                             <div className={'grid bg-primary-50 p-4 m-4 gap-5 rounded-xl sm:grid-cols-2'}>
-                                <div className="relative rounded-lg  h-48  md:h-64">
-                                    {/*booking.pitch?.image || booking.venue_info?.images?.[0]?.image ||*/}
-                                    <img
-                                        src={IMAGE_BASE_URL + booking.pitch?.image || booking.venue_info?.images?.[0]?.image }
-                                        alt="Venue"
-                                        className="w-full lg:h-64 h-48 object-cover rounded-xl"
-                                    />
+                                <div className="relative rounded-lg h-48 md:h-64">
+                                    {booking.pitch?.image || booking.venue_info?.images?.[0]?.image ? (
+                                        <img
+                                            src={getImageUrl(booking.pitch?.image || booking.venue_info?.images?.[0]?.image)}
+                                            alt="Venue"
+                                            className="w-full lg:h-64 h-48 object-cover rounded-xl"
+                                            onError={() => handleImageError('venue-image')}
+                                        />
+                                    ) : (
+                                        <div className="w-full lg:h-64 h-48 bg-gray-200 flex items-center justify-center rounded-xl">
+                                            <MapPin size={32} className="text-gray-400" />
+                                        </div>
+                                    )}
                                 </div>
                                 {booking?.venue_info && (
-                                    <div className=" rounded-lg">
+                                    <div className="rounded-lg">
                                         <VenueInfoCard booking={booking} />
                                     </div>
                                 )}
                             </div>
                         </div>
+
                         {/* Players Section */}
                         {booking.users && booking.users.length > 0 && (
                             <div className="border-t border-gray-100 pt-4 p-4 sm:pt-6">
@@ -396,19 +499,25 @@ const BookingDetailView = () => {
                                 <div className="flex items-center gap-2 overflow-x-auto pb-2">
                                     {booking.users.slice(0, 8).map((user, idx) => (
                                         <div key={idx} className="relative group flex-shrink-0">
-                                            {user.image ? (
+                                            {user.image && !imageErrors[`player-${idx}`] ? (
                                                 <img
-                                                    src={IMAGE_BASE_URL + user.image}
-                                                    alt={user.name}
+                                                    src={getImageUrl(user.image)}
+                                                    alt={user.name || 'Player'}
                                                     className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover border-3 border-white shadow-md hover:scale-110 transition-transform"
-                                                    onClick={() => (role.is_admin || role.is_sub_admin) ?
+                                                    onClick={() => (role?.is_admin || role?.is_sub_admin) ?
                                                         navigate('/players/player-profile', { state: { player: user } }) :
                                                         undefined
                                                     }
+                                                    onError={() => handleImageError(`player-${idx}`)}
                                                 />
                                             ) : (
-                                                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-600 text-xs sm:text-sm font-bold border-3 border-white shadow-md hover:scale-110 transition-transform">
-                                                    {user.name?.charAt(0) || 'U'}
+                                                <div
+                                                    onClick={() => (role?.is_admin || role?.is_sub_admin) ?
+                                                        navigate('/players/player-profile', { state: { player: user } }) :
+                                                        undefined
+                                                    }
+                                                    className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full ${getAvatarColor(user.name)} flex items-center justify-center text-white text-xs sm:text-sm font-bold border-3 border-white shadow-md hover:scale-110 transition-transform`}>
+                                                    {getInitials(user.name)}
                                                 </div>
                                             )}
                                         </div>
@@ -421,6 +530,7 @@ const BookingDetailView = () => {
                                 </div>
                             </div>
                         )}
+
                         {booking.notes && (
                             <div className="border-t border-gray-100 pt-4 sm:pt-6 mt-4 sm:mt-6">
                                 <h4 className="font-semibold text-gray-900 mb-3 text-sm sm:text-base">Customer Note</h4>
@@ -431,6 +541,7 @@ const BookingDetailView = () => {
                                 </div>
                             </div>
                         )}
+
                         {/* Order Summary Card */}
                         <div className="bg-white border-t border-gray-100 rounded-xl p-4 sm:p-6">
                             <h3 className="font-bold text-gray-900 text-base sm:text-lg mb-4 sm:mb-6">Order Summary</h3>
@@ -532,7 +643,7 @@ const BookingDetailView = () => {
                                 >
                                     Cancel
                                 </button>
-                                <button   onClick={handlePrint} className="px-4 py-2.5 sm:py-3 border-2 border-primary-500 text-primary-700 rounded-lg hover:bg-teal-50 transition-colors text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 order-1 sm:order-2">
+                                <button onClick={handlePrint} className="px-4 py-2.5 sm:py-3 border-2 border-primary-500 text-primary-700 rounded-lg hover:bg-teal-50 transition-colors text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 order-1 sm:order-2">
                                     <Send size={16} />
                                     <span className="hidden sm:inline">Invoice</span>
                                     <span className="sm:hidden">Send Invoice</span>
@@ -542,7 +653,6 @@ const BookingDetailView = () => {
                     </div>
                 </div>
             </div>
-
         </div>
     );
 };
@@ -558,10 +668,9 @@ const VenueInfoCard = ({ booking }) => {
         );
     }
 
-
     return (
-        <div className="w-full  mx-auto  rounded-xl   overflow-hidden">
-            <div className="min-h-48  md:min-h-64">
+        <div className="w-full mx-auto rounded-xl overflow-hidden">
+            <div className="min-h-48 md:min-h-64">
                 <h4 className="font-bold text-gray-900 text-lg mb-3">
                     {booking.venue_info?.translations?.name || 'Zayed Sports Club'}
                 </h4>
@@ -577,8 +686,8 @@ const VenueInfoCard = ({ booking }) => {
                     <div className="flex items-center gap-2 text-sm text-gray-600">
                         <Globe size={16} className="text-gray-400 flex-shrink-0" />
                         <span>
-                                                    {booking.venue_info?.venue_play_type?.map(sport => sport.translations?.name).join(', ') || 'Soccer, Basketball'}
-                                                </span>
+                            {booking.venue_info?.venue_play_type?.map(sport => sport.translations?.name).join(', ') || 'Soccer, Basketball'}
+                        </span>
                     </div>
 
                     {/* Phone */}
@@ -601,6 +710,5 @@ const VenueInfoCard = ({ booking }) => {
                 </div>
             </div>
         </div>
-
     );
 };
