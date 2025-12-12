@@ -1,0 +1,91 @@
+{
+  "header": {
+    "create_title": "إنشاء بطولة جديدة",
+    "edit_title": "تعديل البطولة",
+    "create_subtitle": "املأ التفاصيل لبدء بطولة جديدة.",
+    "edit_subtitle": "تحديث تفاصيل هذه البطولة."
+  },
+  "sections": {
+    "basic_info": "المعلومات الأساسية",
+    "cover_image": "صورة الغلاف",
+    "gallery": "معرض صور البطولة (اختياري)",
+    "schedule": "الجدول الزمني",
+    "game_details": "تفاصيل اللعبة",
+    "details": "التفاصيل"
+  },
+  "fields": {
+    "name": {
+      "label": "اسم البطولة",
+      "placeholder": "أدخل اسم البطولة..."
+    },
+    "subtitle": {
+      "label": "العنوان الفرعي",
+      "placeholder": "مثال: أكبر حدث صيفي"
+    },
+    "description": {
+      "label": "الوصف",
+      "placeholder": "صف البطولة..."
+    },
+    "start_date": "تاريخ البدء",
+    "end_date": "تاريخ الانتهاء",
+    "registration_deadline": "الموعد النهائي للتسجيل",
+    "start_time": "وقت البدء",
+    "end_time": "وقت الانتهاء",
+    "venue": {
+      "label": "المنشأة",
+      "placeholder": "اختر المنشأة"
+    },
+    "sport": {
+      "label": "الرياضة",
+      "placeholder": "اختر الرياضة"
+    },
+    "scoring_system": "نظام البطولة",
+    "max_teams": "أقصى عدد للفرق",
+    "entry_fee": "رسوم الاشتراك",
+    "rules": {
+      "label": "القواعد",
+      "placeholder": "أدخل قواعد البطولة..."
+    },
+    "prizes": {
+      "label": "الجوائز",
+      "placeholder": "أدخل تفاصيل الجوائز..."
+    },
+    "is_active": "هل هي نشطة؟"
+  },
+  "options": {
+    "knockout": "خروج المغلوب",
+    "league": "دوري"
+  },
+  "images": {
+    "click_to_upload": "اضغط لرفع الغلاف",
+    "formats": "SVG, PNG, JPG أو GIF",
+    "add_photos": "إضافة صور",
+    "add_more": "إضافة المزيد"
+  },
+  "buttons": {
+    "cancel": "إلغاء",
+    "save": "حفظ البطولة",
+    "update": "تحديث البطولة"
+  },
+  "messages": {
+    "invalid_image": "يرجى رفع ملف صورة صالح",
+    "cover_uploaded": "تم رفع صورة الغلاف",
+    "cover_failed": "فشل رفع صورة الغلاف",
+    "gallery_failed": "فشل رفع {{fileName}}",
+    "wait_cover": "يرجى الانتظار حتى ينتهي رفع صورة الغلاف.",
+    "wait_gallery": "يرجى الانتظار حتى ينتهي رفع صور المعرض.",
+    "fill_required": "يرجى ملء جميع الحقول المطلوبة.",
+    "submission_error": "حدث خطأ ما أثناء الإرسال."
+  },
+  "errors": {
+    "name_required": "اسم البطولة مطلوب",
+    "start_date_required": "تاريخ البدء مطلوب",
+    "end_date_required": "تاريخ الانتهاء مطلوب",
+    "venue_required": "المنشأة مطلوبة",
+    "max_teams_required": "أقصى عدد للفرق مطلوب",
+    "sport_required": "الرياضة مطلوبة",
+    "start_time_required": "وقت البدء مطلوب",
+    "end_time_required": "وقت الانتهاء مطلوب",
+    "reg_deadline_required": "الموعد النهائي للتسجيل مطلوب"
+  }
+}
