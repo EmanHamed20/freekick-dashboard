@@ -1,0 +1,65 @@
+{
+  "header": {
+    "title": "Tournaments"
+  },
+  "stats": {
+    "total_tournaments": "Total Tournaments",
+    "active": "Active",
+    "inactive": "Inactive",
+    "total_capacity": "Total Capacity"
+  },
+  "status_section": {
+    "active_title": "Active Tournaments",
+    "inactive_title": "Inactive Tournaments",
+    "empty_active": "No active tournaments found.",
+    "empty_inactive": "No inactive tournaments found.",
+    "single_item": "Tournament",
+    "group_item": "Tournaments",
+    "reject_btn": "Deactivate",
+    "approve_btn": "Activate"
+  },
+  "table": {
+    "sr_no": "Sr.No",
+    "info": "Tournament Info",
+    "venues": "Venues",
+    "timeline": "Timeline",
+    "max_teams": "Max Teams",
+    "entry_fee": "Entry Fee",
+    "status": "Status",
+    "actions": "Actions",
+    "code": "Code",
+    "start": "Start",
+    "end": "End",
+    "currency": "AED"
+  },
+  "actions": {
+    "create": "Create Tournament",
+    "view_details": "View Details",
+    "edit": "Edit Tournament",
+    "delete": "Delete Tournament",
+    "activate": "Activate",
+    "deactivate": "Deactivate"
+  },
+  "filters": {
+    "status_label": "Status",
+    "status_all": "All Status",
+    "status_active": "Active",
+    "status_inactive": "Inactive",
+    "venue_label": "Filter by Venues",
+    "venue_all": "All Venues",
+    "search_placeholder": "Search by name, code or venue..."
+  },
+  "alerts": {
+    "delete_title": "Delete \"{{name}}\"?",
+    "delete_text": "This action cannot be undone. The tournament will be permanently removed.",
+    "delete_confirm": "Yes, Delete it",
+    "status_title": "{{action}} Tournament?",
+    "status_text": "Are you sure you want to {{action}} \"{{name}}\"?",
+    "status_confirm": "Yes, {{action}}"
+  },
+  "common": {
+    "loading": "Loading...",
+    "unknown_sport": "Unknown Sport",
+    "venue_fallback": "Venue #{{id}}"
+  }
+}

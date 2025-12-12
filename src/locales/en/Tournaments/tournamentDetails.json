@@ -1,0 +1,49 @@
+{
+  "header": {
+    "back": "Back to Tournaments",
+    "update": "Update Tournament"
+  },
+  "status": {
+    "active": "Active",
+    "inactive": "Inactive",
+    "private": "Private"
+  },
+  "card": {
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "daily": "Daily",
+    "entry_fee": "Entry Fee",
+    "currency": "AED",
+    "free": "Free",
+    "registered_teams": "Registered Teams",
+    "code": "Code",
+    "share": "Share Tournament",
+    "venue_id": "Venue ID: {{id}}"
+  },
+  "gallery": {
+    "title": "Gallery"
+  },
+  "info": {
+    "title": "About Tournament",
+    "no_description": "No description provided.",
+    "system": "System",
+    "sport": "Sport",
+    "deadline": "Deadline",
+    "format": "Format",
+    "teams_max": "{{count}} Teams Max",
+    "standard_system": "Standard",
+    "sport_id": "Sport ID: {{id}}",
+    "unknown_sport": "Unknown"
+  },
+  "rules": {
+    "title": "Rules & Prizes",
+    "prizes_title": "Prizes",
+    "no_prizes": "No specific prizes listed.",
+    "regulations_title": "Regulations",
+    "default_rules": "Standard tournament rules apply."
+  },
+  "messages": {
+    "no_selection": "No tournament selected",
+    "load_error": "Could not load tournament details"
+  }
+}

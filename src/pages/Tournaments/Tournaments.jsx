@@ -11,83 +11,144 @@ import { showConfirm } from '../../components/showConfirm.jsx';
 import TournamentsForm from '../../components/tournaments/TournamentsForm.jsx';
 import StatCard from './../../components/Charts/StatCards.jsx';
 import { IMAGE_BASE_URL } from '../../utils/ImageBaseURL.js';
-
-// --- IMPORT THE NEW SECTION COMPONENT ---
-// Adjust the path based on where you saved StatusManagementSection
 import StatusManagementSection, { StatusBadge } from '../../components/StatusManagementSection';
+import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next'; // Import translation hook
 
 const Tournaments = () => {
+    const { t, i18n } = useTranslation('tournamentPage'); // Initialize hook
     const rowsPerPage = 10;
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
     useEffect(() => {
-        dispatch(setPageTitle('Tournaments'));
-    }, [dispatch]);
+        dispatch(setPageTitle(t('header.title')));
+    }, [dispatch, t]);
 
     // --- STATE MANAGEMENT ---
-    const [tournamentsData, setTournamentsData] = useState([]);
-    const [venuesData, setVenuesData] = useState([]);
-    const [sportsData, setSportsData] = useState([]);
+
+    // 1. Table Data (Paginated)
+    const [tableData, setTableData] = useState([]);
+    const [totalItems, setTotalItems] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [currentPage, setCurrentPage] = useState(1);
 
+    // 2. Global Data (For Stats & Status Sections - Unpaginated)
+    const [allTournaments, setAllTournaments] = useState([]);
+
+    // 3. Dropdown/Aux Data
+    const [venuesData, setVenuesData] = useState([]);
+    const [sportsData, setSportsData] = useState([]);
+
+    // 4. Form State
     const [showForm, setShowForm] = useState(false);
     const [selectedTournament, setSelectedTournament] = useState(null);
 
+    // 5. Filters
     const [activeFilters, setActiveFilters] = useState({
         globalSearch: '',
         status: 'all',
         venue: 'all'
     });
 
-    // --- FETCH DATA ---
-    const fetchAllData = async () => {
+    // --- API PARAMETERS PREPARATION ---
+    const apiFilters = useMemo(() => ({
+        page: currentPage,
+        page_limit: rowsPerPage,
+        search: activeFilters.globalSearch,
+        venue: activeFilters.venue === 'all' ? undefined : activeFilters.venue,
+        // Convert status string to boolean string for API or undefined
+        is_active: activeFilters.status === 'all' ? undefined : (activeFilters.status === 'active' ? 'true' : 'false')
+    }), [currentPage, rowsPerPage, activeFilters]);
+
+    // --- FETCH DATA FUNCTIONS ---
+
+    // 1. Fetch Paginated Data for Table
+    const fetchTableData = async () => {
         setIsLoading(true);
         try {
-            const [tournamentsRes, venuesRes, sportsRes] = await Promise.all([
-                tournamentsService.getAll(),
-                venuesService.getAllVenues(),
+            const response = await tournamentsService.getAll(apiFilters);
+            if (response) {
+                setTableData(response.results || []);
+                setTotalItems(response.count || 0);
+            }
+        } catch (error) {
+            console.error("Failed to fetch tournaments:", error);
+            // setTableData([]); // Optional: clear table on error
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // 2. Fetch Global Data (Stats & Sections) & Aux Data (Venues/Sports)
+    const fetchGlobalAndAuxData = async () => {
+        try {
+            const [allTournamentsRes, venuesRes, sportsRes] = await Promise.all([
+                tournamentsService.getAll({ page_limit: 1000 }), // Fetch large batch for stats
+                venuesService.getAllVenues({ page_limit: 1000 }),
                 venueSportsService.getAll()
             ]);
 
-            if (tournamentsRes && tournamentsRes.results) {
-                setTournamentsData(tournamentsRes.results);
-            } else if (Array.isArray(tournamentsRes)) {
-                setTournamentsData(tournamentsRes);
+            // Set Global Tournaments
+            if (allTournamentsRes && allTournamentsRes.results) {
+                setAllTournaments(allTournamentsRes.results);
             }
 
+            // Set Venues
             if (venuesRes && venuesRes.results) {
                 setVenuesData(venuesRes.results);
             }
 
+            // Set Sports
             const rawSports = sportsRes.results || sportsRes || [];
             if (Array.isArray(rawSports)) {
+                const currentLang = i18n.language;
                 const formattedSports = rawSports.map(sport => ({
-                    label: sport.translations?.en?.name || sport.name || 'Unknown Sport',
+                    label: sport.translations?.[currentLang]?.name || sport.name || t('common.unknown_sport'),
                     value: sport.id
                 }));
                 setSportsData(formattedSports);
             }
 
         } catch (error) {
-            console.error("Failed to fetch data:", error);
-        } finally {
-            setIsLoading(false);
+            console.error("Failed to fetch auxiliary data:", error);
         }
     };
 
-    useEffect(() => {
-        fetchAllData();
-    }, []);
+    // 3. Helper to refresh just the global list (e.g., after status change)
+    const fetchGlobalTournamentsOnly = async () => {
+        try {
+            const res = await tournamentsService.getAll({ page_limit: 1000 });
+            if (res && res.results) setAllTournaments(res.results);
+        } catch (error) {
+            console.error("Failed to refresh global list", error);
+        }
+    };
 
+    // --- EFFECTS ---
+
+    // Initial Load
+    useEffect(() => {
+        fetchGlobalAndAuxData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [i18n.language]); // Refetch aux data to get correct translation for sports if lang changes
+
+    // Fetch Table Data when filters/page change
+    useEffect(() => {
+        fetchTableData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [apiFilters]);
+
+    // --- HELPERS ---
     const getVenueName = (venueId) => {
         if (!venueId) return 'N/A';
         const venue = venuesData.find(v => v.id === venueId);
-        return venue?.translations?.name || venue?.name || `Venue #${venueId}`;
+        // Prioritize translation matching current language
+        return venue?.translations?.[i18n.language]?.name || venue?.translations?.name || venue?.name || t('common.venue_fallback', { id: venueId });
     };
 
-    // --- HANDLERS ---
+    // --- ACTION HANDLERS ---
+
     const handleViewDetails = (tournament) => {
         const resolvedVenueName = getVenueName(tournament.venue);
         navigate(`/tournaments/tournament-details`, {
@@ -103,7 +164,7 @@ const Tournaments = () => {
         setShowForm(true);
     };
 
-    const handleEditTournament = (tournament) => {
+    const handleEditTournament = async (tournament) => {
         setSelectedTournament(tournament);
         setShowForm(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -117,88 +178,62 @@ const Tournaments = () => {
     const handleFormSuccess = () => {
         setShowForm(false);
         setSelectedTournament(null);
-        fetchAllData();
+        fetchTableData(); // Refresh table
+        fetchGlobalTournamentsOnly(); // Refresh stats/sections
     };
 
     const handleDeleteTournament = async (id, name) => {
         const isConfirmed = await showConfirm({
-            title: `Delete "${name}"?`,
-            text: "This action cannot be undone. The tournament will be permanently removed.",
-            confirmButtonText: 'Yes, Delete it'
+            title: t('alerts.delete_title', { name }),
+            text: t('alerts.delete_text'),
+            confirmButtonText: t('alerts.delete_confirm')
         });
 
         if (!isConfirmed) return;
 
         try {
             await tournamentsService.delete(id);
-            setTournamentsData(prev => prev.filter(item => item.id !== id));
+            if (tableData.length === 1 && currentPage > 1) {
+                setCurrentPage(prev => prev - 1);
+            } else {
+                fetchTableData();
+            }
+            fetchGlobalTournamentsOnly();
         } catch (error) {
             console.error("Failed to delete tournament:", error);
         }
     };
 
-    // --- NEW: HANDLE STATUS CHANGE VIA SECTION ---
     const handleStatusUpdate = async (tournament, newStatus) => {
-        const actionWord = newStatus ? "Activate" : "Deactivate";
+        const actionWord = newStatus ? t('actions.activate') : t('actions.deactivate');
+        // We handle lowercase dynamically for the text body, though in Arabic it might not matter as much
+        const actionWordLower = actionWord.toLowerCase();
+
         const isConfirmed = await showConfirm({
-            title: `${actionWord} Tournament?`,
-            text: `Are you sure you want to ${actionWord.toLowerCase()} "${tournament.name}"?`,
-            confirmButtonText: `Yes, ${actionWord}`
+            title: t('alerts.status_title', { action: actionWord }),
+            text: t('alerts.status_text', { action: actionWordLower, name: tournament.name }),
+            confirmButtonText: t('alerts.status_confirm', { action: actionWord })
         });
 
         if (!isConfirmed) return;
 
         try {
-            // Assuming update accepts ID and FormData or Object.
-            // We create a partial object or formData depending on your service implementation.
-            // Here we assume simple object update is supported, otherwise use FormData.
-            const updatedData = {
+            await tournamentsService.update(tournament.id, {
                 ...tournament,
                 is_active: newStatus
-            };
-
-            // Note: Adjust 'update' to match your exact service method signature
-            await tournamentsService.update(tournament.id, updatedData);
-
-            // Optimistic Update
-            setTournamentsData(prev => prev.map(t =>
-                t.id === tournament.id ? { ...t, is_active: newStatus } : t
-            ));
-
+            });
+            fetchTableData();
+            fetchGlobalTournamentsOnly();
         } catch (error) {
-            console.error(`Failed to ${actionWord.toLowerCase()} tournament:`, error);
+            console.error(`Failed to update tournament status:`, error);
         }
     };
 
-    // --- FILTER & STATS ---
-    const filteredData = useMemo(() => {
-        if (!tournamentsData) return [];
-        return tournamentsData.filter((item) => {
-            if (activeFilters.globalSearch) {
-                const search = activeFilters.globalSearch.toLowerCase();
-                const name = item.name?.toLowerCase() || '';
-                const code = item.code?.toLowerCase() || '';
-                const venueName = getVenueName(item.venue).toLowerCase();
-                if (!name.includes(search) && !code.includes(search) && !venueName.includes(search)) return false;
-            }
-            if (activeFilters.status !== 'all') {
-                const isStatusActive = activeFilters.status === 'active';
-                if (item.is_active !== isStatusActive) return false;
-            }
-            if (activeFilters.venue !== 'all') {
-                if (String(item.venue) !== String(activeFilters.venue)) return false;
-            }
-            return true;
-        });
-    }, [tournamentsData, venuesData, activeFilters]);
-
-    // Derived Lists for Status Sections
-    const activeTournaments = useMemo(() => tournamentsData.filter(t => t.is_active), [tournamentsData]);
-    const inactiveTournaments = useMemo(() => tournamentsData.filter(t => !t.is_active), [tournamentsData]);
+    // --- FILTER & PAGINATION HANDLERS ---
 
     const handleFilterChange = (newFilters) => {
         setActiveFilters(prev => ({ ...prev, ...newFilters }));
-        setCurrentPage(1);
+        setCurrentPage(1); // Reset to page 1 on filter change
     };
 
     const handleSearch = (term) => {
@@ -208,13 +243,19 @@ const Tournaments = () => {
 
     const handlePageChange = (pageNumber) => setCurrentPage(pageNumber);
 
+    // --- STATS & DERIVED DATA ---
+
+    // Derived Lists from Global Data
+    const activeTournaments = useMemo(() => allTournaments.filter(t => t.is_active), [allTournaments]);
+    const inactiveTournaments = useMemo(() => allTournaments.filter(t => !t.is_active), [allTournaments]);
+
     const stats = useMemo(() => {
-        const total = tournamentsData.length;
+        const total = allTournaments.length;
         const active = activeTournaments.length;
         const inactive = inactiveTournaments.length;
-        const totalTeams = tournamentsData.reduce((acc, curr) => acc + (parseInt(curr.max_teams) || 0), 0);
+        const totalTeams = allTournaments.reduce((acc, curr) => acc + (parseInt(curr.max_teams) || 0), 0);
         return { total, active, inactive, totalTeams };
-    }, [tournamentsData, activeTournaments, inactiveTournaments]);
+    }, [allTournaments, activeTournaments, inactiveTournaments]);
 
     // --- RENDER FUNCTIONS FOR STATUS SECTIONS ---
     const renderTournamentIcon = (item) => (
@@ -235,24 +276,25 @@ const Tournaments = () => {
             </div>
             <div className="flex items-center gap-1 text-gray-400">
                 <Calendar size={10} />
-                <span>{new Date(item.start_date).toLocaleDateString()}</span>
+                {/* Localize date */}
+                <span>{new Date(item.start_date).toLocaleDateString(i18n.language)}</span>
             </div>
         </div>
     );
 
-    // --- ACTIONS COMPONENT FOR TABLE ---
+    // --- COLUMNS CONFIG ---
     const ActionButtons = ({ tournament }) => (
         <div className="flex justify-end items-center gap-1 sm:gap-2">
             <button
                 className="text-gray-500 hover:text-teal-600 p-1 rounded transition-colors hover:bg-gray-50"
-                title="View Details"
+                title={t('actions.view_details')}
                 onClick={() => handleViewDetails(tournament)}
             >
                 <Eye size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
             <button
                 className="text-gray-500 hover:text-blue-600 p-1 rounded transition-colors hover:bg-gray-50"
-                title="Edit Tournament"
+                title={t('actions.edit')}
                 onClick={() => handleEditTournament(tournament)}
             >
                 <Pencil size={16} className="sm:w-[18px] sm:h-[18px]" />
@@ -260,23 +302,23 @@ const Tournaments = () => {
             <button
                 className="text-gray-500 hover:text-red-600 p-1 rounded transition-colors hover:bg-gray-50"
                 onClick={() => handleDeleteTournament(tournament.id, tournament.name || `Tournament ${tournament.id}`)}
-                title="Delete Tournament"
+                title={t('actions.delete')}
             >
                 <Trash2 size={16} className="sm:w-[18px] sm:h-[18px]" />
             </button>
         </div>
     );
 
-    const columns = [
+    const columns = useMemo(() => [
         {
-            header: 'Sr.No',
+            header: t('table.sr_no'),
             accessor: 'id',
             align: 'left',
             width: '60px',
-            render: (row, index) => <div className="text-gray-600 font-medium text-sm">{index + 1}</div>
+            render: (row, index) => <div className="text-gray-600 font-medium text-sm">{(currentPage - 1) * rowsPerPage + index + 1}</div>
         },
         {
-            header: 'Tournament Info',
+            header: t('table.info'),
             accessor: 'name',
             align: 'left',
             render: (row) => (
@@ -300,14 +342,14 @@ const Tournaments = () => {
                     <div className="flex flex-col">
                         <span className="font-semibold text-gray-900 text-sm line-clamp-1" title={row.name}>{row.name}</span>
                         <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded w-fit mt-1">
-                            Code: {row.code}
+                            {t('table.code')}: {row.code}
                         </span>
                     </div>
                 </div>
             )
         },
         {
-            header: 'Venues',
+            header: t('table.venues'),
             accessor: 'venue',
             align: 'left',
             render: (row) => (
@@ -318,18 +360,18 @@ const Tournaments = () => {
             )
         },
         {
-            header: 'Timeline',
+            header: t('table.timeline'),
             accessor: 'start_date',
             align: 'center',
             render: (row) => (
                 <div className="flex flex-col text-xs sm:text-sm text-gray-600">
-                    <span className="whitespace-nowrap">Start: {new Date(row.start_date).toLocaleDateString()}</span>
-                    <span className="whitespace-nowrap">End: {new Date(row.end_date).toLocaleDateString()}</span>
+                    <span className="whitespace-nowrap">{t('table.start')}: {new Date(row.start_date).toLocaleDateString(i18n.language)}</span>
+                    <span className="whitespace-nowrap">{t('table.end')}: {new Date(row.end_date).toLocaleDateString(i18n.language)}</span>
                 </div>
             )
         },
         {
-            header: 'Max Teams',
+            header: t('table.max_teams'),
             accessor: 'max_teams',
             align: 'center',
             render: (row) => (
@@ -340,44 +382,54 @@ const Tournaments = () => {
             )
         },
         {
-            header: 'Entry Fee',
+            header: t('table.entry_fee'),
             accessor: 'entry_fee',
             align: 'center',
             render: (row) => (
                 <span className="font-bold text-gray-800 text-sm">
-                   AED {parseFloat(row.entry_fee).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                   {t('table.currency')} {parseFloat(row.entry_fee).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </span>
             )
         },
         {
-            header: 'Status',
+            header: t('table.status'),
             accessor: 'is_active',
             align: 'center',
             render: (row) => <StatusBadge isActive={row.is_active} />
         },
         {
-            header: 'Actions',
+            header: t('table.actions'),
             align: 'right',
             render: (row) => <ActionButtons tournament={row} />
         }
-    ];
+    ], [t, i18n.language, currentPage, venuesData]);
 
-    const topActions = [
-        { label: 'Create Tournament', onClick: handleCreateTournament, type: 'primary', icon: <Plus size={16} /> }
-    ];
+    const topActions = useMemo(() => [
+        { label: t('actions.create'), onClick: handleCreateTournament, type: 'primary', icon: <Plus size={16} /> }
+    ], [t]);
 
-    const filterConfig = [
+    const filterConfig = useMemo(() => [
         {
-            key: 'status', label: 'Status', type: 'select',
-            options: [ { label: 'All Status', value: 'all' }, { label: 'Active', value: 'active' }, { label: 'Inactive', value: 'inactive' } ],
+            key: 'status', label: t('filters.status_label'), type: 'select',
+            options: [
+                { label: t('filters.status_all'), value: 'all' },
+                { label: t('filters.status_active'), value: 'active' },
+                { label: t('filters.status_inactive'), value: 'inactive' }
+            ],
             value: activeFilters.status
         },
         {
-            key: 'venue', label: 'Filter by Venues', type: 'select',
-            options: [ { label: 'All Venues', value: 'all' }, ...venuesData.map(v => ({ label: v.translations?.name || v.name, value: v.id })) ],
+            key: 'venue', label: t('filters.venue_label'), type: 'select',
+            options: [
+                { label: t('filters.venue_all'), value: 'all' },
+                ...venuesData.map(v => ({
+                    label: v.translations?.[i18n.language]?.name || v.translations?.name || v.name,
+                    value: v.id
+                }))
+            ],
             value: activeFilters.venue
         }
-    ];
+    ], [t, activeFilters, venuesData, i18n.language]);
 
     return (
         <div className="w-full px-2 sm:px-0">
@@ -386,7 +438,10 @@ const Tournaments = () => {
                 <div className='my-4 sm:my-8'>
                     <TournamentsForm
                         initialData={selectedTournament}
-                        venuesList={venuesData.map(v => ({ label: v.translations?.name || v.name, value: v.id }))}
+                        venuesList={venuesData.map(v => ({
+                            label: v.translations?.[i18n.language]?.name || v.translations?.name || v.name,
+                            value: v.id
+                        }))}
                         sportsList={sportsData}
                         onCancel={handleCancelForm}
                         onSuccess={handleFormSuccess}
@@ -398,25 +453,25 @@ const Tournaments = () => {
                     {/* 1. Stat Cards */}
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 my-4 sm:my-8">
                         <StatCard
-                            title="Total Tournaments"
+                            title={t('stats.total_tournaments')}
                             value={stats.total}
                             icon={TrendingUp}
                             iconColor="text-blue-600"
                         />
                         <StatCard
-                            title="Active"
+                            title={t('stats.active')}
                             value={stats.active}
                             icon={CheckCircle}
                             iconColor="text-green-600"
                         />
                         <StatCard
-                            title="Inactive"
+                            title={t('stats.inactive')}
                             value={stats.inactive}
                             icon={XCircle}
                             iconColor="text-red-600"
                         />
                         <StatCard
-                            title="Total Capacity"
+                            title={t('stats.total_capacity')}
                             value={stats.totalTeams}
                             icon={Users}
                             iconColor="text-purple-600"
@@ -427,26 +482,26 @@ const Tournaments = () => {
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
                         {/* Active List (Approved) */}
                         <StatusManagementSection
-                            title="Active Tournaments"
-                            name={{ single: 'Tournament', group: 'Tournaments' }}
+                            title={t('status_section.active_title')}
+                            name={{ single: t('status_section.single_item'), group: t('status_section.group_item') }}
                             items={activeTournaments}
                             statusType="approved"
-                            emptyMessage="No active tournaments found."
+                            emptyMessage={t('status_section.empty_active')}
                             onReject={(item) => handleStatusUpdate(item, false)} // Action: Deactivate
-                            rejectLabel="Reject"
+                            rejectLabel={t('status_section.reject_btn')}
                             renderIcon={renderTournamentIcon}
                             renderHeader={renderTournamentHeader}
                             renderMeta={renderTournamentMeta}
                         />
                         {/* Inactive List (Pending Approval) */}
                         <StatusManagementSection
-                            title="Inactive Tournaments"
-                            name={{ single: 'Tournament', group: 'Tournaments' }}
+                            title={t('status_section.inactive_title')}
+                            name={{ single: t('status_section.single_item'), group: t('status_section.group_item') }}
                             items={inactiveTournaments}
-                            statusType="pending" // Or 'rejected', controls the icon color
-                            emptyMessage="No inactive tournaments found."
+                            statusType="pending"
+                            emptyMessage={t('status_section.empty_inactive')}
                             onApprove={(item) => handleStatusUpdate(item, true)} // Action: Activate
-                            approveLabel="Approve"
+                            approveLabel={t('status_section.approve_btn')}
                             renderIcon={renderTournamentIcon}
                             renderHeader={renderTournamentHeader}
                             renderMeta={renderTournamentMeta}
@@ -454,17 +509,17 @@ const Tournaments = () => {
                     </div>
 
                     {/* 3. Main Table */}
-                    {isLoading && tournamentsData.length === 0 ? (
-                        <div className="p-6 sm:p-10 text-center text-gray-500 text-sm sm:text-base">Loading...</div>
+                    {isLoading && tableData.length === 0 ? (
+                        <div className="p-6 sm:p-10 text-center text-gray-500 text-sm sm:text-base">{t('common.loading')}</div>
                     ) : (
                         <MainTable
-                            data={filteredData || []}
+                            data={tableData}
                             columns={columns}
                             filters={filterConfig}
-                            searchPlaceholder="Search by name, code or venue..."
+                            searchPlaceholder={t('filters.search_placeholder')}
                             topActions={topActions}
                             currentPage={currentPage}
-                            totalItems={filteredData?.length || 0}
+                            totalItems={totalItems}
                             itemsPerPage={rowsPerPage}
                             onSearch={handleSearch}
                             onFilterChange={handleFilterChange}

@@ -1,0 +1,91 @@
+{
+  "header": {
+    "create_title": "Create New Tournament",
+    "edit_title": "Edit Tournament",
+    "create_subtitle": "Fill in the details to launch a new tournament.",
+    "edit_subtitle": "Update the details for this tournament."
+  },
+  "sections": {
+    "basic_info": "Basic Information",
+    "cover_image": "Cover Image",
+    "gallery": "Tournament Gallery (Optional)",
+    "schedule": "Schedule",
+    "game_details": "Game Details",
+    "details": "Details"
+  },
+  "fields": {
+    "name": {
+      "label": "Tournament Name",
+      "placeholder": "Enter tournament name..."
+    },
+    "subtitle": {
+      "label": "Subtitle",
+      "placeholder": "e.g. The biggest summer event"
+    },
+    "description": {
+      "label": "Description",
+      "placeholder": "Describe the tournament..."
+    },
+    "start_date": "Start Date",
+    "end_date": "End Date",
+    "registration_deadline": "Registration Deadline",
+    "start_time": "Start Time",
+    "end_time": "End Time",
+    "venue": {
+      "label": "Venue",
+      "placeholder": "Select Venue"
+    },
+    "sport": {
+      "label": "Sport",
+      "placeholder": "Select Sport"
+    },
+    "scoring_system": "Scoring System",
+    "max_teams": "Max Teams",
+    "entry_fee": "Entry Fee",
+    "rules": {
+      "label": "Rules",
+      "placeholder": "Enter tournament rules..."
+    },
+    "prizes": {
+      "label": "Prizes",
+      "placeholder": "Enter prize details..."
+    },
+    "is_active": "Is Active?"
+  },
+  "options": {
+    "knockout": "Knockout",
+    "league": "League"
+  },
+  "images": {
+    "click_to_upload": "Click to upload cover",
+    "formats": "SVG, PNG, JPG or GIF",
+    "add_photos": "Add Photos",
+    "add_more": "Add More"
+  },
+  "buttons": {
+    "cancel": "Cancel",
+    "save": "Save Tournament",
+    "update": "Update Tournament"
+  },
+  "messages": {
+    "invalid_image": "Please upload a valid image file",
+    "cover_uploaded": "Cover image uploaded",
+    "cover_failed": "Cover image upload failed",
+    "gallery_failed": "Failed to upload {{fileName}}",
+    "wait_cover": "Please wait for cover image to finish uploading.",
+    "wait_gallery": "Please wait for gallery images to finish uploading.",
+    "fill_required": "Please fill in all required fields.",
+    "submission_error": "Something went wrong during submission."
+  },
+  "errors": {
+    "name_required": "Tournament Name is required",
+    "start_date_required": "Start Date is required",
+    "end_date_required": "End Date is required",
+    "venue_required": "Venue is required",
+    "max_teams_required": "Max Teams is required",
+    "sport_required": "Sport is required",
+    "start_time_required": "Start Time is required",
+    "end_time_required": "End Time is required",
+    "reg_deadline_required": "Registration Deadline is required"
+  }
+}

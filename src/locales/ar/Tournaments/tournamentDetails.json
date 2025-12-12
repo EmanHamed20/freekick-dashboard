@@ -1,0 +1,49 @@
+{
+  "header": {
+    "back": "العودة للبطولات",
+    "update": "تحديث البطولة"
+  },
+  "status": {
+    "active": "نشطة",
+    "inactive": "غير نشطة",
+    "private": "خاصة"
+  },
+  "card": {
+    "start_date": "تاريخ البدء",
+    "end_date": "تاريخ الانتهاء",
+    "daily": "يومياً",
+    "entry_fee": "رسوم الاشتراك",
+    "currency": "د.إ",
+    "free": "مجاني",
+    "registered_teams": "الفرق المسجلة",
+    "code": "الكود",
+    "share": "مشاركة البطولة",
+    "venue_id": "رقم المنشأة: {{id}}"
+  },
+  "gallery": {
+    "title": "معرض الصور"
+  },
+  "info": {
+    "title": "عن البطولة",
+    "no_description": "لا يوجد وصف.",
+    "system": "النظام",
+    "sport": "الرياضة",
+    "deadline": "الموعد النهائي",
+    "format": "التنسيق",
+    "teams_max": "أقصى عدد {{count}} فرق",
+    "standard_system": "قياسي",
+    "sport_id": "رقم الرياضة: {{id}}",
+    "unknown_sport": "غير معروف"
+  },
+  "rules": {
+    "title": "القواعد والجوائز",
+    "prizes_title": "الجوائز",
+    "no_prizes": "لا توجد جوائز محددة.",
+    "regulations_title": "اللوائح",
+    "default_rules": "تطبق قواعد البطولة القياسية."
+  },
+  "messages": {
+    "no_selection": "لم يتم تحديد بطولة",
+    "load_error": "تعذر تحميل تفاصيل البطولة"
+  }
+}

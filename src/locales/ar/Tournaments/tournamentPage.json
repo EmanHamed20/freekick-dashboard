@@ -1,0 +1,65 @@
+{
+  "header": {
+    "title": "البطولات"
+  },
+  "stats": {
+    "total_tournaments": "إجمالي البطولات",
+    "active": "نشطة",
+    "inactive": "غير نشطة",
+    "total_capacity": "السعة الإجمالية"
+  },
+  "status_section": {
+    "active_title": "البطولات النشطة",
+    "inactive_title": "البطولات غير النشطة",
+    "empty_active": "لا توجد بطولات نشطة.",
+    "empty_inactive": "لا توجد بطولات غير نشطة.",
+    "single_item": "بطولة",
+    "group_item": "بطولات",
+    "reject_btn": "تعطيل",
+    "approve_btn": "تفعيل"
+  },
+  "table": {
+    "sr_no": "رقم",
+    "info": "بيانات البطولة",
+    "venues": "الملاعب",
+    "timeline": "الجدول الزمني",
+    "max_teams": "الفرق",
+    "entry_fee": "الرسوم",
+    "status": "الحالة",
+    "actions": "الإجراءات",
+    "code": "الكود",
+    "start": "البدء",
+    "end": "الانتهاء",
+    "currency": "د.إ"
+  },
+  "actions": {
+    "create": "إنشاء بطولة",
+    "view_details": "عرض التفاصيل",
+    "edit": "تعديل البطولة",
+    "delete": "حذف البطولة",
+    "activate": "تفعيل",
+    "deactivate": "تعطيل"
+  },
+  "filters": {
+    "status_label": "الحالة",
+    "status_all": "كل الحالات",
+    "status_active": "نشطة",
+    "status_inactive": "غير نشطة",
+    "venue_label": "تصفية حسب الملعب",
+    "venue_all": "كل الملاعب",
+    "search_placeholder": "بحث بالاسم، الكود أو الملعب..."
+  },
+  "alerts": {
+    "delete_title": "حذف \"{{name}}\"؟",
+    "delete_text": "لا يمكن التراجع عن هذا الإجراء. ستتم إزالة البطولة بشكل دائم.",
+    "delete_confirm": "نعم، احذفها",
+    "status_title": "{{action}} البطولة؟",
+    "status_text": "هل أنت متأكد أنك تريد {{action}} \"{{name}}\"؟",
+    "status_confirm": "نعم، {{action}}"
+  },
+  "common": {
+    "loading": "جاري التحميل...",
+    "unknown_sport": "رياضة غير معروفة",
+    "venue_fallback": "ملعب رقم {{id}}"
+  }
+}

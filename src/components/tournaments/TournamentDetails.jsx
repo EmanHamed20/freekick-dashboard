@@ -1,89 +1,445 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useDispatch } from "react-redux";
 import {
-    Calendar, Clock, MapPin, Trophy, DollarSign,
-    ArrowLeft, Share2, Award, BookOpen, LayoutGrid,
-    CheckCircle, Hash, X, ChevronLeft, ChevronRight
+    Calendar, Clock, MapPin, Trophy,
+    Share2, Award, BookOpen, LayoutGrid,
+    CheckCircle, Edit, Shield, CheckCircle2,
+    XCircle, Image as ImageIcon, Users, Activity
 } from 'lucide-react';
+import { toast } from 'react-toastify';
+import { useTranslation } from 'react-i18next'; // Import Hook
+
+// --- Services ---
 import { tournamentsService } from '../../services/tournaments/tournamentsService';
 import { venuesService } from '../../services/venues/venuesService';
-import { toast } from 'react-toastify';
-import { useDispatch } from "react-redux";
+import { venueSportsService } from '../../services/venueSports/venueSportsService.js';
 import { setPageTitle } from "../../features/pageTitle/pageTitleSlice.js";
-// --- IMPORT ADDED ---
+
+// --- Utils ---
 import { IMAGE_BASE_URL } from '../../utils/ImageBaseURL.js';
 
-const TournamentDetails = () => {
-    const dispatch = useDispatch();
+// --- Components ---
+import ArrowIcon from '../../components/common/ArrowIcon';
+import TournamentsForm from "../../components/tournaments/TournamentsForm.jsx";
 
-    const { id } = useParams();
+// --- HELPER COMPONENTS ---
+
+const Header = ({ onBack, onUpdate, isEditing, t }) => (
+    <div className="bg-white shadow-sm z-10 relative">
+        <div className="mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
+            <button
+                onClick={onBack}
+                className="flex items-center gap-2 text-primary-600 hover:text-primary-700 transition-colors"
+            >
+                <ArrowIcon className="w-8 h-8 transform rotate-90" />
+                <span className="font-medium">{t('header.back')}</span>
+            </button>
+
+            {!isEditing && (
+                <button
+                    onClick={onUpdate}
+                    className="flex items-center gap-2 px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors shadow-sm"
+                >
+                    <Edit size={16} />
+                    <span>{t('header.update')}</span>
+                </button>
+            )}
+        </div>
+    </div>
+);
+
+const TournamentProfileCard = ({ tournament, venueName, t, currentLang }) => {
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        return new Date(dateString).toLocaleDateString(currentLang, {
+            day: 'numeric', month: 'short', year: 'numeric'
+        });
+    };
+
+    const formatTime = (timeString) => {
+        if (!timeString) return '';
+        return timeString.substring(0, 5);
+    };
+
+    const registered = tournament.joined_user_data?.length || 0;
+    const max = tournament.max_teams || 0;
+    const percentage = max > 0 ? (registered / max) * 100 : 0;
+
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden group">
+            <div className="relative h-64 w-full">
+                {tournament.cover_image ? (
+                    <img
+                        src={`${IMAGE_BASE_URL}${tournament.cover_image}`}
+                        alt={tournament.name}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                    />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-r from-primary-600 to-primary-700 flex items-center justify-center">
+                        <Trophy size={64} className="text-white opacity-30" />
+                    </div>
+                )}
+
+                <div className="hidden absolute inset-0 bg-gradient-to-r from-primary-600 to-primary-700 items-center justify-center">
+                    <Trophy size={64} className="text-white opacity-30" />
+                </div>
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+
+                <div className="absolute top-4 right-4">
+                    <span className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide backdrop-blur-md shadow-sm ${
+                        tournament.is_active ? 'bg-green-500/90 text-white' : 'bg-red-500/90 text-white'
+                    }`}>
+                        {tournament.is_active ? <CheckCircle2 size={12} /> : <XCircle size={12} />}
+                        {tournament.is_active ? t('status.active') : t('status.inactive')}
+                    </span>
+                </div>
+
+                {tournament.private && (
+                    <div className="absolute top-4 left-4">
+                        <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide backdrop-blur-md shadow-sm bg-amber-500/90 text-white">
+                            {t('status.private')}
+                        </span>
+                    </div>
+                )}
+
+                <div className="absolute bottom-4 left-4 right-4 text-white">
+                    <h2 className="text-2xl font-bold leading-tight mb-1 drop-shadow-md">
+                        {tournament.name}
+                    </h2>
+                    {tournament.subtitle && (
+                        <p className="text-sm text-gray-200 font-medium mb-2 drop-shadow-sm italic">
+                            {tournament.subtitle}
+                        </p>
+                    )}
+                    <div className="flex items-center gap-2 text-sm opacity-90">
+                        <MapPin size={14} className="text-primary-300" />
+                        <span className="truncate">{venueName || t('card.venue_id', { id: tournament.venue })}</span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="bg-gray-50 border-b border-gray-100 p-4 flex justify-between items-center text-sm">
+                <div className="flex flex-col">
+                    <span className="text-xs text-gray-500 uppercase font-bold mb-0.5">{t('card.start_date')}</span>
+                    <span className="font-semibold text-gray-900 flex items-center gap-1">
+                        <Calendar size={14} className="text-primary-600"/> {formatDate(tournament.start_date)}
+                    </span>
+                </div>
+                <div className="w-px h-8 bg-gray-200"></div>
+                <div className="flex flex-col text-right">
+                    <span className="text-xs text-gray-500 uppercase font-bold mb-0.5">{t('card.end_date')}</span>
+                    <span className="font-semibold text-gray-900 flex items-center gap-1">
+                        {formatDate(tournament.end_date)} <Calendar size={14} className="text-primary-600"/>
+                    </span>
+                </div>
+            </div>
+
+            <div className="px-4 py-3 bg-white border-b border-gray-100 flex items-center justify-center text-sm">
+                <Clock size={14} className="text-gray-400 mr-2"/>
+                <span className="text-gray-600 font-medium">
+                    {t('card.daily')}: {formatTime(tournament.start_time)} - {formatTime(tournament.end_time)}
+                </span>
+            </div>
+
+            <div className="p-6 text-center border-b border-gray-100">
+                <p className="text-xs text-gray-400 uppercase tracking-wider font-bold mb-1">{t('card.entry_fee')}</p>
+                <div className="text-3xl font-extrabold text-primary-600 flex items-center justify-center gap-1">
+                    {parseFloat(tournament.entry_fee) > 0 ? (
+                        <>
+                            <span className="text-lg text-gray-400 font-medium">{t('card.currency')}</span>
+                            {parseFloat(tournament.entry_fee).toLocaleString()}
+                        </>
+                    ) : (
+                        t('card.free')
+                    )}
+                </div>
+            </div>
+
+            <div className="p-5 border-b border-gray-100">
+                <div className="flex justify-between items-end mb-2">
+                    <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                        <Users size={14} className="text-blue-500"/> {t('card.registered_teams')}
+                    </h3>
+                    <span className="text-xs font-bold text-primary-600">
+                        {registered} / {max}
+                    </span>
+                </div>
+                <div className="w-full bg-gray-100 rounded-full h-2.5">
+                    <div
+                        className="bg-primary-600 h-2.5 rounded-full transition-all duration-500"
+                        style={{ width: `${Math.min(percentage, 100)}%` }}
+                    ></div>
+                </div>
+                <div className="mt-3 flex justify-between text-xs text-gray-500">
+                    <span>{t('card.code')}: <span className="font-mono bg-gray-100 px-1 rounded text-gray-700">{tournament.code || 'N/A'}</span></span>
+                </div>
+            </div>
+
+            <div className="p-5">
+                <button className="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-700 font-semibold rounded-xl border border-gray-200 transition-colors flex items-center justify-center gap-2 text-sm">
+                    <Share2 size={16} /> {t('card.share')}
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const TournamentGallery = ({ images, t }) => {
+    const [activeImage, setActiveImage] = useState(images && images.length > 0 ? images[0].image : null);
+
+    useEffect(() => {
+        if (images && images.length > 0) {
+            setActiveImage(images[0].image);
+        }
+    }, [images]);
+
+    if (!images || images.length === 0) return null;
+
+    return (
+        <div className="mb-8">
+            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <ImageIcon className="text-primary-600" size={20}/>
+                {t('gallery.title')}
+            </h3>
+
+            <div className="bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
+                <div className="relative h-[400px] w-full rounded-xl overflow-hidden group bg-gray-100">
+                    <img
+                        src={activeImage ? `${IMAGE_BASE_URL}${activeImage}` : ''}
+                        alt="Tournament Main"
+                        className="w-full h-full object-contain md:object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                </div>
+
+                {images.length > 1 && (
+                    <div className="mt-2 flex gap-2 overflow-x-auto pb-1 pt-1 scrollbar-hide">
+                        {images.map((img, idx) => (
+                            <button
+                                key={img.id || idx}
+                                onClick={() => setActiveImage(img.image)}
+                                className={`relative h-20 w-28 flex-shrink-0 rounded-lg overflow-hidden transition-all duration-300 border ${
+                                    activeImage === img.image
+                                        ? 'ring-2 ring-primary-500 ring-offset-2 opacity-100 border-primary-500'
+                                        : 'opacity-70 hover:opacity-100 border-gray-200'
+                                }`}
+                            >
+                                <img
+                                    src={`${IMAGE_BASE_URL}${img.image}`}
+                                    alt={`Thumb ${idx}`}
+                                    className="w-full h-full object-cover"
+                                />
+                            </button>
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// --- INFO SECTION: Shows Sport Name ---
+const TournamentInfoSection = ({ tournament, sportName, t, currentLang }) => {
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 mb-6 overflow-hidden">
+            <div className="p-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <BookOpen className="w-5 h-5 text-primary-500" /> {t('info.title')}
+                </h3>
+            </div>
+
+            <div className="p-6 space-y-8">
+                <div>
+                    <p className="text-gray-600 text-sm leading-7 whitespace-pre-line">
+                        {tournament.description || t('info.no_description')}
+                    </p>
+                </div>
+
+                <div className="w-full h-px bg-gray-100"></div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700">
+                            <Trophy size={16} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase font-bold text-gray-400">{t('info.system')}</p>
+                            <p className="text-sm font-semibold text-gray-900 capitalize">
+                                {tournament.scoring_system?.replace('_', ' ') || t('info.standard_system')}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* SPORT NAME DISPLAY */}
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700">
+                            <Activity size={16} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase font-bold text-gray-400">{t('info.sport')}</p>
+                            <p className="text-sm font-semibold text-gray-900 capitalize">
+                                {sportName}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-700">
+                            <Clock size={16} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase font-bold text-gray-400">{t('info.deadline')}</p>
+                            <p className="text-sm font-semibold text-gray-900">
+                                {new Date(tournament.registration_deadline).toLocaleDateString(currentLang)}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
+                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-700">
+                            <LayoutGrid size={16} />
+                        </div>
+                        <div>
+                            <p className="text-[10px] uppercase font-bold text-gray-400">{t('info.format')}</p>
+                            <p className="text-sm font-semibold text-gray-900">
+                                {t('info.teams_max', { count: tournament.max_teams })}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const TournamentRulesSection = ({ tournament, t }) => {
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+            <div className="p-5 border-b border-gray-100 bg-gray-50/50">
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-red-500" /> {t('rules.title')}
+                </h3>
+            </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4">
+                    <h4 className="font-bold text-gray-800 text-sm border-b pb-2 border-gray-100 flex items-center gap-2">
+                        <Award size={16} className="text-amber-500"/> {t('rules.prizes_title')}
+                    </h4>
+                    <div className="bg-amber-50 p-4 rounded-xl border border-amber-100 text-sm text-gray-700 whitespace-pre-line">
+                        {tournament.prizes || t('rules.no_prizes')}
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <h4 className="font-bold text-gray-800 text-sm border-b pb-2 border-gray-100 flex items-center gap-2">
+                        <CheckCircle size={16} className="text-green-500"/> {t('rules.regulations_title')}
+                    </h4>
+                    <div className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
+                        {tournament.rules || t('rules.default_rules')}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- MAIN PAGE COMPONENT ---
+
+const TournamentDetails = () => {
+    const { t, i18n } = useTranslation('tournamentDetails'); // Initialize hook
+    const dispatch = useDispatch();
     const navigate = useNavigate();
     const location = useLocation();
 
-    // 1. Initialize State with passed data (Tournament + Venues Name)
-    const initialTournament = location.state?.tournamentData || null;
-    const initialVenueName = location.state?.venueName || '';
+    const tournamentId = location.state?.id || location.state?.tournamentData?.id;
 
+    // --- State ---
+    const [tournament, setTournament] = useState(null);
+    const [venueName, setVenueName] = useState('');
+    const [venuesList, setVenuesList] = useState([]);
+    // Sports List State
+    const [sportsList, setSportsList] = useState([]);
+
+    const [loading, setLoading] = useState(true);
+    const [isEditing, setIsEditing] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    // --- Fetch Data ---
     useEffect(() => {
-        if (initialTournament) {
-            dispatch(setPageTitle(`${initialTournament.name}`));
-        }
-    }, [dispatch, initialTournament]);
+        const fetchTournamentDetails = async () => {
+            if (!tournamentId) {
+                toast.error(t('messages.no_selection'));
+                navigate('/tournaments');
+                return;
+            }
 
-    const [tournament, setTournament] = useState(initialTournament);
-    const [venueName, setVenueName] = useState(initialVenueName);
-    const [loading, setLoading] = useState(!initialTournament);
-    const [activeTab, setActiveTab] = useState('overview');
-
-    // Lightbox State
-    const [lightboxOpen, setLightboxOpen] = useState(false);
-    const [currentImageIndex, setCurrentImageIndex] = useState(0);
-
-    // 2. Fetch Data
-    useEffect(() => {
-        const fetchDetails = async () => {
+            setLoading(true);
             try {
-                let currentData = tournament;
+                // 1. Fetch Tournament
+                const response = await tournamentsService.getById(tournamentId);
+                const data = response.data || response;
+                setTournament(data);
+                dispatch(setPageTitle(`${data.name}`));
 
-                // A. Fetch Tournament Details if not passed via state
-                if (!currentData && id) {
-                    setLoading(true);
-                    const response = await tournamentsService.getById(id);
-                    currentData = response.data || response;
-                    setTournament(currentData);
-                    dispatch(setPageTitle(`${currentData.name}`));
+                // 2. Fetch Sports
+                try {
+                    const sportsRes = await venueSportsService.getAll();
+                    setSportsList(sportsRes.results || []);
+                } catch (sportErr) {
+                    console.warn("Could not fetch sports list", sportErr);
                 }
 
-                // B. Fetch Venues Name ONLY if we don't have it (Fallback)
-                if (currentData && currentData.venue && !venueName) {
-                    const venuesRes = await venuesService.getAllVenues();
-                    const venuesList = venuesRes.results || venuesRes || [];
-                    const foundVenue = venuesList.find(v => v.id === currentData.venue);
+                // 3. Fetch Venues
+                try {
+                    const venuesRes = await venuesService.getAllVenues({ page_limit: 1000 });
+                    const allVenues = venuesRes.results || venuesRes || [];
+                    setVenuesList(allVenues);
 
-                    if (foundVenue) {
-                        setVenueName(foundVenue.translations?.en?.name || foundVenue.name);
-                    } else {
-                        setVenueName(`Venue #${currentData.venue}`);
+                    if (data.venue) {
+                        const foundVenue = allVenues.find(v => v.id === data.venue);
+                        if (foundVenue) {
+                            // Use translation logic for venue name if available or fallback
+                            setVenueName(foundVenue.translations?.[i18n.language]?.name || foundVenue.translations?.name || foundVenue.name);
+                        } else {
+                            setVenueName(t('card.venue_id', { id: data.venue }));
+                        }
                     }
+                } catch (venueErr) {
+                    console.warn("Could not fetch venue details", venueErr);
+                    setVenueName(t('card.venue_id', { id: data.venue }));
                 }
 
             } catch (error) {
-                console.error("Error loading details:", error);
-                if (!tournament) {
-                    toast.error("Could not load tournament details");
-                    navigate('/tournaments');
-                }
+                console.error("Error fetching tournament:", error);
+                toast.error(t('messages.load_error'));
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchDetails();
-    }, [id, navigate, tournament, venueName, dispatch]);
+        fetchTournamentDetails();
+    }, [tournamentId, refreshKey, dispatch, navigate, i18n.language, t]);
+
+    // --- Helper: Find Sport Name by ID ---
+    const getSportName = (sportId) => {
+        if (!sportId) return 'N/A';
+        const sport = sportsList.find(s => s.id === sportId);
+        if (sport) {
+            return sport.translations?.[i18n.language]?.name || sport.translations?.en?.name || sport.name || t('info.unknown_sport');
+        }
+        return t('info.sport_id', { id: sportId });
+    };
+
+    const handleUpdateSuccess = () => {
+        setIsEditing(false);
+        setRefreshKey(prev => prev + 1);
+    };
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[60vh]">
+            <div className="flex items-center justify-center min-h-screen bg-gray-50">
                 <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600"></div>
             </div>
         );
@@ -91,354 +447,75 @@ const TournamentDetails = () => {
 
     if (!tournament) return null;
 
-    // --- Helpers ---
-    const formatDate = (dateString) => {
-        if (!dateString) return 'N/A';
-        return new Date(dateString).toLocaleDateString('en-GB', {
-            day: 'numeric', month: 'long', year: 'numeric'
-        });
-    };
+    // --- RENDER: EDIT MODE ---
+    if (isEditing) {
+        // Format lists for the generic Select components
+        const formattedVenues = venuesList.map(v => ({
+            label: v.translations?.[i18n.language]?.name || v.translations?.name || v.name,
+            value: v.id
+        }));
 
-    const formatTime = (timeString) => {
-        if (!timeString) return '';
-        const today = new Date().toISOString().split('T')[0];
-        const dateObj = new Date(`${today}T${timeString}`);
-        if(isNaN(dateObj.getTime())) return timeString.substring(0, 5);
-        return dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    };
+        const formattedSports = sportsList.map(s => ({
+            label: s.translations?.[i18n.language]?.name || s.translations?.en?.name || s.name,
+            value: s.id
+        }));
 
-    const StatusBadge = ({ isActive }) => (
-        <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${
-            isActive
-                ? 'bg-green-50 text-green-700 border-green-200'
-                : 'bg-red-50 text-red-700 border-red-200'
-        }`}>
-            {isActive ? 'Active' : 'Inactive'}
-        </span>
-    );
+        return (
+            <div className="min-h-screen bg-gray-50">
+                <div className="mx-auto py-6 px-4 md:px-8">
+                    <TournamentsForm
+                        initialData={tournament}
+                        venuesList={formattedVenues}
+                        sportsList={formattedSports}
+                        onCancel={() => setIsEditing(false)}
+                        onSuccess={handleUpdateSuccess}
+                    />
+                </div>
+            </div>
+        );
+    }
 
-    // --- Gallery Logic ---
+    // --- RENDER: VIEW MODE ---
     const allImages = tournament.images && Array.isArray(tournament.images) ? tournament.images : [];
 
-    const openLightbox = (index) => {
-        setCurrentImageIndex(index);
-        setLightboxOpen(true);
-    };
-
-    const nextImage = (e) => {
-        e.stopPropagation();
-        setCurrentImageIndex((prev) => (prev + 1) % allImages.length);
-    };
-
-    const prevImage = (e) => {
-        e.stopPropagation();
-        setCurrentImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
-    };
-
     return (
-        <div className="min-h-screen bg-gray-50 pb-12 font-sans text-secondary-600">
+        <div className="min-h-screen bg-gray-50 pb-10">
+            <Header
+                onBack={() => navigate('/tournaments')}
+                onUpdate={() => setIsEditing(true)}
+                isEditing={isEditing}
+                t={t}
+            />
 
-            {/* --- HERO / BANNER SECTION --- */}
-            <div className="relative bg-white shadow-sm">
-
-                {/* 1. Background Image Container */}
-                <div className="h-64 md:h-80 w-full overflow-hidden relative">
-                    {tournament.cover_image ? (
-                        <img
-                            src={`${IMAGE_BASE_URL}${tournament.cover_image}`}
-                            alt={tournament.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                                e.target.onerror = null;
-                                // Fallback if the specific image fails to load
-                                e.target.style.display = 'none';
-                                e.target.nextSibling.style.display = 'flex';
-                            }}
-                        />
-                    ) : (
-                        <div className="w-full h-full bg-gradient-to-r from-primary-600 to-primary-700 flex items-center justify-center">
-                            <Trophy size={64} className="text-white opacity-30" />
-                        </div>
-                    )}
-                    {/* Fallback div in case image load fails via JS or no image exists */}
-                    {tournament.cover_image && (
-                        <div className="hidden w-full h-full bg-gradient-to-r from-primary-600 to-primary-700 items-center justify-center absolute top-0 left-0 -z-10">
-                            <Trophy size={64} className="text-white opacity-30" />
-                        </div>
-                    )}
-
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent pointer-events-none"></div>
-
-                    <button
-                        onClick={() => navigate('/tournaments')}
-                        className="absolute top-6 left-6 bg-white/20 hover:bg-white/30 backdrop-blur-md text-white p-2 rounded-full transition-all z-20"
-                    >
-                        <ArrowLeft size={24} />
-                    </button>
-                </div>
-
-                {/* 2. Floating Info Card */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative -mt-20 z-10">
-                    <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-
-                        <div className="flex-1">
-                            <div className="flex items-center gap-3 mb-2">
-                                <StatusBadge isActive={tournament.is_active} />
-                                <span className="flex items-center gap-1 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-                                    <Hash size={12} /> {tournament.code || 'NO-CODE'}
-                                </span>
-                                {tournament.private && (
-                                    <span className="text-xs bg-amber-100 text-amber-800 px-2 py-1 rounded border border-amber-200">
-                                        Private
-                                    </span>
-                                )}
-                            </div>
-                            <h1 className="text-3xl font-bold text-gray-900 mb-1">{tournament.name}</h1>
-                            {tournament.subtitle && (
-                                <p className="text-lg text-primary-600 font-medium">{tournament.subtitle}</p>
-                            )}
-
-                            <div className="flex flex-wrap gap-4 mt-4 text-sm text-gray-600">
-                                <div className="flex items-center gap-1.5">
-                                    <MapPin size={16} className="text-primary-500" />
-                                    <span>{venueName || `Venue ID: ${tournament.venue}`}</span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <Trophy size={16} className="text-primary-500" />
-                                    <span className="capitalize">{tournament.scoring_system?.replace('_', ' ')}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="flex flex-col items-end gap-3 min-w-[140px]">
-                            <div className="text-right">
-                                <p className="text-xs text-gray-500 uppercase font-semibold">Entry Fee</p>
-                                <p className="text-2xl font-bold text-primary-600">
-                                    {parseFloat(tournament.entry_fee) > 0
-                                        ? `AED ${parseFloat(tournament.entry_fee).toLocaleString()}`
-                                        : 'Free'}
-                                </p>
-                            </div>
-                            <button className="flex items-center gap-2 text-gray-500 hover:text-primary-600 transition-colors text-sm font-medium">
-                                <Share2 size={16} /> Share Tournament
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* --- TABS --- */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-                <div className="border-b border-gray-200">
-                    <nav className="-mb-px flex space-x-8 overflow-x-auto">
-                        {['Overview', 'Rules & Prizes', 'Gallery'].map((tab) => {
-                            const key = tab.toLowerCase().split(' ')[0];
-                            const isActive = activeTab === key;
-                            return (
-                                <button
-                                    key={key}
-                                    onClick={() => setActiveTab(key)}
-                                    className={`
-                                        whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                                        ${isActive
-                                        ? 'border-primary-600 text-primary-700'
-                                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}
-                                    `}
-                                >
-                                    {tab}
-                                </button>
-                            );
-                        })}
-                    </nav>
-                </div>
-            </div>
-
-            {/* --- MAIN CONTENT GRID --- */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+            <div className="mx-auto py-6 px-4 md:px-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-                    {/* Left Column: Tab Content */}
-                    <div className="lg:col-span-2 space-y-8">
-
-                        {/* OVERVIEW TAB */}
-                        {activeTab === 'overview' && (
-                            <div className="space-y-8 animate-fade-in">
-                                <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                                    <h3 className="text-lg font-bold text-secondary-600 mb-4 flex items-center gap-2">
-                                        <BookOpen size={20} className="text-primary-500" /> About Tournament
-                                    </h3>
-                                    <div className="prose text-gray-600 leading-relaxed whitespace-pre-line">
-                                        {tournament.description || "No description provided."}
-                                    </div>
-                                </section>
-
-                                <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className="bg-primary-50 rounded-xl p-5 border border-primary-100 flex items-start gap-4">
-                                        <div className="bg-white p-2 rounded-lg text-primary-600 shadow-sm">
-                                            <Calendar size={24} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-semibold text-primary-700 uppercase">Dates</p>
-                                            <p className="font-semibold text-gray-900 mt-1">{formatDate(tournament.start_date)}</p>
-                                            <p className="text-sm text-gray-500">to {formatDate(tournament.end_date)}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-white rounded-xl p-5 border border-gray-200 flex items-start gap-4">
-                                        <div className="bg-gray-100 p-2 rounded-lg text-gray-600">
-                                            <Clock size={24} />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs font-semibold text-gray-500 uppercase">Daily Schedule</p>
-                                            <p className="font-semibold text-gray-900 mt-1">
-                                                {formatTime(tournament.start_time)} - {formatTime(tournament.end_time)}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </section>
-                            </div>
-                        )}
-
-                        {/* RULES TAB */}
-                        {activeTab === 'rules' && (
-                            <div className="space-y-8 animate-fade-in">
-                                <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 relative overflow-hidden">
-                                    <div className="absolute top-0 right-0 p-4 opacity-5">
-                                        <Award size={100} />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-secondary-600 mb-4 flex items-center gap-2">
-                                        <Award size={20} className="text-primary-500" /> Prizes & Awards
-                                    </h3>
-                                    <div className="prose text-gray-600 whitespace-pre-line bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                        {tournament.prizes || "No prize details listed."}
-                                    </div>
-                                </section>
-
-                                <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                                    <h3 className="text-lg font-bold text-secondary-600 mb-4 flex items-center gap-2">
-                                        <CheckCircle size={20} className="text-primary-500" /> Rules & Regulations
-                                    </h3>
-                                    <div className="text-gray-600 whitespace-pre-line leading-relaxed">
-                                        {tournament.rules || "Standard tournament rules apply."}
-                                    </div>
-                                </section>
-                            </div>
-                        )}
-
-                        {/* GALLERY TAB */}
-                        {activeTab === 'gallery' && (
-                            <div className="animate-fade-in bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                                <h3 className="text-lg font-bold text-secondary-600 mb-6 flex items-center gap-2">
-                                    <LayoutGrid size={20} className="text-primary-500" /> Tournament Gallery
-                                </h3>
-
-                                {allImages.length > 0 ? (
-                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                                        {allImages.map((imgObj, index) => (
-                                            <div
-                                                key={imgObj.id || index}
-                                                onClick={() => openLightbox(index)}
-                                                className="group relative aspect-square cursor-pointer overflow-hidden rounded-lg bg-gray-100 border border-gray-200"
-                                            >
-                                                <img
-                                                    src={`${IMAGE_BASE_URL}${imgObj.image}`}
-                                                    alt={`Gallery ${index}`}
-                                                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                                                />
-                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                                    <div className="opacity-0 group-hover:opacity-100 bg-white/90 p-2 rounded-full transform translate-y-4 group-hover:translate-y-0 transition-all duration-300">
-                                                        <LayoutGrid size={20} className="text-primary-600" />
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                                        <LayoutGrid className="mx-auto h-12 w-12 text-gray-300" />
-                                        <h3 className="mt-2 text-sm font-semibold text-gray-900">No images</h3>
-                                        <p className="mt-1 text-sm text-gray-500">There are no gallery images for this tournament.</p>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Right Column: Sidebar Stats */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Registration Info</h4>
-
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="text-gray-600">Max Teams</span>
-                                <span className="font-bold text-secondary-600">{tournament.max_teams}</span>
-                            </div>
-                            <div className="w-full bg-gray-100 rounded-full h-2 mb-4">
-                                <div className="bg-primary-500 h-2 rounded-full" style={{ width: '0%' }}></div>
-                            </div>
-
-                            <div className="space-y-3 pt-4 border-t border-gray-100">
-                                <div className="flex items-start gap-3">
-                                    <Calendar size={18} className="text-primary-500 mt-0.5" />
-                                    <div>
-                                        <p className="text-xs text-gray-500">Registration Deadline</p>
-                                        <p className="text-sm font-medium text-gray-900">
-                                            {formatDate(tournament.registration_deadline)}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex items-start gap-3">
-                                    <DollarSign size={18} className="text-primary-500 mt-0.5" />
-                                    <div>
-                                        <p className="text-xs text-gray-500">Entry Fee</p>
-                                        <p className="text-sm font-medium text-gray-900">
-                                            {parseFloat(tournament.entry_fee) <= 0 ? "Free" : `AED ${parseFloat(tournament.entry_fee)}`}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-gradient-to-br from-secondary-600 to-indigo-900 rounded-xl shadow-lg p-6 text-white relative overflow-hidden">
-                            <div className="relative z-10">
-                                <h4 className="font-bold text-lg mb-2">Need Help?</h4>
-                                <p className="text-indigo-100 text-sm mb-4">
-                                    Contact the venue administration for more details about this tournament.
-                                </p>
-                                <button className="w-full py-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/30 rounded-lg text-sm font-medium transition-colors">
-                                    Contact Organizer
-                                </button>
-                            </div>
-                            <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+                    {/* Left Column */}
+                    <div className="col-span-1">
+                        <div className="sticky top-6 h-fit space-y-6">
+                            <TournamentProfileCard
+                                tournament={tournament}
+                                venueName={venueName}
+                                t={t}
+                                currentLang={i18n.language}
+                            />
                         </div>
                     </div>
+
+                    {/* Right Column */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <TournamentGallery images={allImages} t={t} />
+                        <TournamentInfoSection
+                            tournament={tournament}
+                            sportName={getSportName(tournament.sport)} // Pass sport name here
+                            t={t}
+                            currentLang={i18n.language}
+                        />
+                        <TournamentRulesSection tournament={tournament} t={t} />
+                    </div>
+
                 </div>
             </div>
-
-            {/* --- LIGHTBOX MODAL --- */}
-            {lightboxOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 backdrop-blur-sm" onClick={() => setLightboxOpen(false)}>
-                    <button onClick={() => setLightboxOpen(false)} className="absolute top-4 right-4 text-white/70 hover:text-white p-2">
-                        <X size={32} />
-                    </button>
-                    <button onClick={prevImage} className="absolute left-4 text-white/70 hover:text-white p-4 bg-white/10 hover:bg-white/20 rounded-full transition-all">
-                        <ChevronLeft size={32} />
-                    </button>
-                    <div className="max-w-5xl max-h-[90vh] p-4" onClick={(e) => e.stopPropagation()}>
-                        <img
-                            src={`${IMAGE_BASE_URL}${allImages[currentImageIndex].image}`}
-                            alt="Full View"
-                            className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl"
-                        />
-                        <div className="text-center mt-4 text-white/60 text-sm">
-                            Image {currentImageIndex + 1} of {allImages.length}
-                        </div>
-                    </div>
-                    <button onClick={nextImage} className="absolute right-4 text-white/70 hover:text-white p-4 bg-white/10 hover:bg-white/20 rounded-full transition-all">
-                        <ChevronRight size={32} />
-                    </button>
-                </div>
-            )}
         </div>
     );
 };

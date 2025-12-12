@@ -1,24 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
-import MainInput from './../MainInput.jsx';
-// Removed useTranslation as we only have one input now
+import MainInput from './../MainInput.jsx'; // Adjust path if needed
 import { uploadService } from '../../services/upload/uploadService.js';
 import { tournamentsService } from '../../services/tournaments/tournamentsService.js';
 import { generateUniqueFileName } from '../../utils/fileUtils';
+import { IMAGE_BASE_URL } from '../../utils/ImageBaseURL.js';
+import { useTranslation } from 'react-i18next'; // Import Hook
 
 import {
     Type, DollarSign, Calendar, Trophy, Save, X,
     UploadCloud, Trash2, ChevronDown, Users, Loader2, Edit,
-    Clock, AlignLeft, FileText, Activity, Image as ImageIcon, Plus
+    Clock, AlignLeft, FileText, Activity, Image as ImageIcon, Plus, Check
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-// --- IMPORT ADDED ---
-import { IMAGE_BASE_URL } from '../../utils/ImageBaseURL.js';
 
 const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess, initialData = null }) => {
+    const { t } = useTranslation('tournamentForm'); // Initialize hook
 
     // --- STATE ---
     const [formData, setFormData] = useState({
-        name: '', // Single name field
+        name: '',
         subtitle: '',
         description: '',
         rules: '',
@@ -36,26 +36,27 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
         is_active: true,
     });
 
-    // Cover Image State
-    const [selectedImage, setSelectedImage] = useState(null);
-    const [uniqueName, setUniqueName] = useState('');
-    const [imagePreview, setImagePreview] = useState(null);
-    const [finalImageUrl, setFinalImageUrl] = useState('');
-    const [isImageUploading, setIsImageUploading] = useState(false);
-
-    // Gallery Images State (Multiple)
+    // --- IMAGE STATE ---
+    const [coverImage, setCoverImage] = useState(null);
     const [galleryImages, setGalleryImages] = useState([]);
-    const galleryInputRef = useRef(null);
 
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const fileInputRef = useRef(null);
+
+    // Refs
+    const coverInputRef = useRef(null);
+    const galleryInputRef = useRef(null);
+
+    // --- HELPER: PROCESS SERVER IMAGES ---
+    const processImage = (imagePath) => {
+        if (!imagePath) return null;
+        return imagePath.startsWith('http') ? imagePath : `${IMAGE_BASE_URL}${imagePath}`;
+    };
 
     // --- POPULATE FORM IF EDITING ---
     useEffect(() => {
         if (initialData) {
             setFormData({
-                // Prefer the top-level name, or fallback to translation if structure differs
                 name: initialData.name || initialData.translations?.en?.name || '',
                 subtitle: initialData.subtitle || '',
                 description: initialData.description || '',
@@ -74,29 +75,23 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
                 is_active: initialData.is_active ?? true,
             });
 
-            // Handle Cover Image
             if (initialData.cover_image) {
-                // If it's an existing image, we prefix with BASE_URL for display
-                // But we keep the relative path in finalImageUrl/uniqueName so if they don't change it, we send the same path back (or handle it in logic)
-                const fullUrl = initialData.cover_image.startsWith('http')
-                    ? initialData.cover_image
-                    : `${IMAGE_BASE_URL}${initialData.cover_image}`;
-
-                setImagePreview(fullUrl);
-                setFinalImageUrl(initialData.cover_image);
-                setUniqueName(initialData.cover_image);
+                setCoverImage({
+                    id: 'initial_cover',
+                    preview: processImage(initialData.cover_image),
+                    serverUrl: initialData.cover_image,
+                    uniqueName: initialData.cover_image,
+                    uploading: false
+                });
             }
 
-            // Handle Gallery Images
             if (initialData.images && Array.isArray(initialData.images)) {
-                const formattedGallery = initialData.images.map(img => ({
-                    id: img.id || Math.random(),
-                    url: img.image, // Keep relative path for payload logic
-                    // Display with Base URL
-                    preview: img.image.startsWith('http')
-                        ? img.image
-                        : `${IMAGE_BASE_URL}${img.image}`,
-                    isUploading: false
+                const formattedGallery = initialData.images.map((img, index) => ({
+                    id: img.id || `existing_${index}`,
+                    preview: processImage(img.image),
+                    serverUrl: img.image,
+                    uniqueName: img.image,
+                    uploading: false
                 }));
                 setGalleryImages(formattedGallery);
             }
@@ -112,45 +107,57 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
         if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
     };
 
-    // --- COVER IMAGE UPLOAD ---
-    const handleImageSelect = async (file) => {
-        if (!file) return;
+    // --- COVER IMAGE HANDLERS ---
+    const handleCoverSelect = (e) => {
+        const files = Array.from(e.target.files);
+        if (!files.length) return;
+
+        const file = files[0];
         if (!file.type.startsWith('image/')) {
-            toast.error("Please upload a valid image file");
+            toast.error(t('messages.invalid_image'));
             return;
         }
 
-        const previewUrl = URL.createObjectURL(file);
-        setSelectedImage(file);
-        setImagePreview(previewUrl); // Local blob URL for immediate preview
+        const newImage = {
+            id: Date.now(),
+            file,
+            preview: URL.createObjectURL(file),
+            uploading: true,
+            serverUrl: null,
+            uniqueName: null
+        };
+        setCoverImage(newImage);
         setErrors(prev => ({ ...prev, cover_image: '' }));
 
-        setIsImageUploading(true);
-        try {
-            const generatedName = generateUniqueFileName(file.name);
-            setUniqueName(generatedName);
-            const result = await uploadService.processFullUpload(file, generatedName);
-            const uploadedUrl = result.url || result.key || result.imageUrl;
-            setFinalImageUrl(uploadedUrl);
-            toast.success("Cover image uploaded");
-        } catch (error) {
-            console.error("Image upload failed", error);
-            toast.error("Cover image upload failed.");
-        } finally {
-            setIsImageUploading(false);
-        }
+        const upload = async () => {
+            try {
+                const generatedName = generateUniqueFileName(file.name);
+                const result = await uploadService.processFullUpload(file, generatedName);
+                const uploadedUrl = result.url || generatedName;
+
+                setCoverImage(prev => ({
+                    ...prev,
+                    serverUrl: uploadedUrl,
+                    uniqueName: generatedName,
+                    uploading: false
+                }));
+                toast.success(t('messages.cover_uploaded'));
+            } catch (error) {
+                console.error("Cover upload failed", error);
+                toast.error(t('messages.cover_failed'));
+                setCoverImage(null);
+            }
+        };
+        upload();
+        if (coverInputRef.current) coverInputRef.current.value = "";
     };
 
     const removeCoverImage = (e) => {
-        e.stopPropagation();
-        setSelectedImage(null);
-        setImagePreview(null);
-        setFinalImageUrl('');
-        setUniqueName('');
-        if (fileInputRef.current) fileInputRef.current.value = "";
+        if(e) e.stopPropagation();
+        setCoverImage(null);
     };
 
-    // --- GALLERY IMAGES UPLOAD (MULTIPLE) ---
+    // --- GALLERY IMAGES HANDLERS ---
     const handleGallerySelect = async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
@@ -158,9 +165,10 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
         const newImages = files.map(file => ({
             id: Math.random().toString(36).substr(2, 9),
             file: file,
-            preview: URL.createObjectURL(file), // Local blob URL
-            isUploading: true,
-            url: ''
+            preview: URL.createObjectURL(file),
+            uploading: true,
+            serverUrl: null,
+            uniqueName: null
         }));
 
         setGalleryImages(prev => [...prev, ...newImages]);
@@ -169,16 +177,16 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
             try {
                 const generatedName = generateUniqueFileName(imgObj.file.name);
                 const result = await uploadService.processFullUpload(imgObj.file, generatedName);
-                const uploadedUrl = result.url || result.key || result.imageUrl;
+                const uploadedUrl = result.url || generatedName;
 
                 setGalleryImages(prev => prev.map(item =>
                     item.id === imgObj.id
-                        ? { ...item, isUploading: false, url: uploadedUrl }
+                        ? { ...item, uploading: false, serverUrl: uploadedUrl, uniqueName: generatedName }
                         : item
                 ));
             } catch (error) {
                 console.error("Gallery upload failed", error);
-                toast.error(`Failed to upload ${imgObj.file.name}`);
+                toast.error(t('messages.gallery_failed', { fileName: imgObj.file.name }));
                 setGalleryImages(prev => prev.filter(item => item.id !== imgObj.id));
             }
         });
@@ -195,70 +203,65 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Validation
         const newErrors = {};
-        if (!formData.name) newErrors.name = "Tournament Name is required";
-        if (!formData.start_date) newErrors.start_date = "Start Date is required";
-        if (!formData.end_date) newErrors.end_date = "End Date is required";
-        if (!formData.venue) newErrors.venue = "Venues is required";
-        if (!formData.max_teams) newErrors.max_teams = "Max Teams is required";
+        if (!formData.name) newErrors.name = t('errors.name_required');
+        if (!formData.start_date) newErrors.start_date = t('errors.start_date_required');
+        if (!formData.end_date) newErrors.end_date = t('errors.end_date_required');
+        if (!formData.venue) newErrors.venue = t('errors.venue_required');
+        if (!formData.max_teams) newErrors.max_teams = t('errors.max_teams_required');
+        if (!formData.sport) newErrors.sport = t('errors.sport_required');
+        if (!formData.start_time) newErrors.start_time = t('errors.start_time_required');
+        if (!formData.end_time) newErrors.end_time = t('errors.end_time_required');
+        if (!formData.registration_deadline) newErrors.registration_deadline = t('errors.reg_deadline_required');
 
-        // --- NEW REQUIRED FIELDS ---
-        if (!formData.sport) newErrors.sport = "Sport is required";
-        if (!formData.start_time) newErrors.start_time = "Start Time is required";
-        if (!formData.end_time) newErrors.end_time = "End Time is required";
-        if (!formData.registration_deadline) newErrors.registration_deadline = "Registration Deadline is required";
-
-        const stillUploading = galleryImages.some(img => img.isUploading);
-        if (isImageUploading || stillUploading) {
-            toast.warning("Please wait for all images to finish uploading.");
+        if (coverImage?.uploading) {
+            toast.warning(t('messages.wait_cover'));
+            return;
+        }
+        const galleryUploading = galleryImages.some(img => img.uploading);
+        if (galleryUploading) {
+            toast.warning(t('messages.wait_gallery'));
             return;
         }
 
         setErrors(newErrors);
         if (Object.keys(newErrors).length > 0) {
-            toast.error("Please fill in all required fields.");
+            toast.error(t('messages.fill_required'));
             return;
         }
 
         setIsSubmitting(true);
 
         try {
+            const finalCoverImage = coverImage ? (coverImage.uniqueName || coverImage.serverUrl) : "";
             const finalGalleryImages = galleryImages
-                .filter(img => img.url)
+                .filter(img => img.uniqueName || img.serverUrl)
                 .map(img => ({
-                    image: img.url // This should be the path/filename saved to DB
+                    image: img.uniqueName || img.serverUrl
                 }));
 
-            // Construct Payload
             const payload = {
-                // Mapping the single name to both fields to satisfy backend schema if needed
                 translations: {
                     en: { name: formData.name },
-                    ar: { name: formData.name } // Fallback to English name for Arabic field
+                    ar: { name: formData.name }
                 },
                 name: formData.name,
                 subtitle: formData.subtitle,
                 description: formData.description,
                 rules: formData.rules,
                 prizes: formData.prizes,
-
                 start_date: formData.start_date,
                 end_date: formData.end_date,
                 registration_deadline: formData.registration_deadline,
                 start_time: formData.start_time ? `${formData.start_time}:00` : null,
                 end_time: formData.end_time ? `${formData.end_time}:00` : null,
-
                 max_teams: parseInt(formData.max_teams, 10),
                 entry_fee: parseFloat(formData.entry_fee || 0).toFixed(2),
                 scoring_system: formData.scoring_system,
-
                 is_active: formData.is_active,
-
                 sport: formData.sport ? parseInt(formData.sport, 10) : null,
                 venue: parseInt(formData.venue, 10),
-
-                cover_image: finalImageUrl || uniqueName || "",
+                cover_image: finalCoverImage,
                 images: finalGalleryImages
             };
 
@@ -275,7 +278,7 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
             if (error.response && error.response.data) {
                 toast.error(`Error: ${JSON.stringify(error.response.data)}`);
             } else {
-                toast.error("Something went wrong during submission.");
+                toast.error(t('messages.submission_error'));
             }
         } finally {
             setIsSubmitting(false);
@@ -283,8 +286,8 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
     };
 
     const scoringOptions = [
-        { label: 'Knockout', value: 'knockout' },
-        { label: 'League', value: 'league' },
+        { label: t('options.knockout'), value: 'knockout' },
+        { label: t('options.league'), value: 'league' },
     ];
 
     const activeSportsList = sportsList.length > 0 ? sportsList : [];
@@ -296,10 +299,10 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
                     <div>
                         <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                             {initialData ? <Edit className="text-teal-100" /> : <Trophy className="text-teal-100" />}
-                            {initialData ? "Edit Tournament" : "Create New Tournament"}
+                            {initialData ? t('header.edit_title') : t('header.create_title')}
                         </h2>
                         <p className="text-teal-100 text-sm mt-1">
-                            {initialData ? "Update the details for this tournament." : "Fill in the details to launch a new tournament."}
+                            {initialData ? t('header.edit_subtitle') : t('header.create_subtitle')}
                         </p>
                     </div>
                     <button onClick={onCancel} className="text-white hover:bg-teal-600 p-2 rounded-lg transition-colors">
@@ -309,200 +312,185 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
             </div>
 
             <form onSubmit={handleSubmit} className="p-8 space-y-8">
-
-                {/* --- 1. Basic Info Section --- */}
+                {/* --- 1. Basic Info --- */}
                 <div className="space-y-6">
                     <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                        <FileText size={20} /> Basic Information
+                        <FileText size={20} /> {t('sections.basic_info')}
                     </h3>
 
-                    {/* UPDATED: Single Input for Name */}
                     <div className='flex md:flex-row flex-col gap-5'>
                         <div className="w-full">
                             <MainInput
-                                label="Tournament Name"
+                                label={t('fields.name.label')}
                                 name="name"
                                 value={formData.name}
                                 onChange={handleChange}
                                 error={errors.name}
                                 icon={Type}
                                 required
-                                placeholder="Enter tournament name..."
+                                placeholder={t('fields.name.placeholder')}
                             />
                         </div>
                         <div className="w-full">
-                            <MainInput label="Subtitle" name="subtitle" value={formData.subtitle} onChange={handleChange}
-                                       placeholder="e.g. The biggest summer event" icon={AlignLeft}/>
+                            <MainInput
+                                label={t('fields.subtitle.label')}
+                                name="subtitle"
+                                value={formData.subtitle}
+                                onChange={handleChange}
+                                placeholder={t('fields.subtitle.placeholder')}
+                                icon={AlignLeft}
+                            />
                         </div>
                     </div>
 
                     <div className="flex flex-col">
-                        <label className="text-sm font-medium text-gray-700 mb-1">Description</label>
-                        <textarea name="description" value={formData.description} onChange={handleChange} rows="3"
-                                  className="w-full p-3 border rounded-lg focus:border-teal-500 outline-none text-sm" placeholder="Describe the tournament..." />
+                        <label className="text-sm font-medium text-gray-700 mb-1">{t('fields.description.label')}</label>
+                        <textarea
+                            name="description"
+                            value={formData.description}
+                            onChange={handleChange}
+                            rows="3"
+                            className="w-full p-3 border rounded-lg focus:border-teal-500 outline-none text-sm"
+                            placeholder={t('fields.description.placeholder')}
+                        />
                     </div>
                 </div>
 
                 {/* --- 2. Cover Image --- */}
                 <div className="space-y-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image</label>
-                    <div
-                        onClick={() => !isImageUploading && fileInputRef.current.click()}
-                        className={`relative w-full h-48 border-2 border-dashed rounded-lg flex flex-col items-center justify-center transition-colors 
-                        ${errors.cover_image ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-teal-500'}
-                        ${isImageUploading ? 'cursor-wait bg-gray-50' : 'cursor-pointer'}`}
-                    >
-                        <input type="file" hidden ref={fileInputRef} accept="image/*" onChange={(e) => handleImageSelect(e.target.files[0])} disabled={isImageUploading} />
-
-                        {isImageUploading ? (
-                            <div className="flex flex-col items-center justify-center">
-                                <Loader2 className="w-10 h-10 text-teal-500 animate-spin mb-2" />
-                                <p className="text-sm font-medium text-gray-600">Uploading...</p>
-                            </div>
-                        ) : imagePreview ? (
-                            <div className="relative w-full h-full p-2 group">
+                    <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
+                        <ImageIcon size={20} /> {t('sections.cover_image')}
+                    </h3>
+                    <div className="w-full">
+                        {coverImage ? (
+                            <div className="relative group w-full h-64 rounded-xl overflow-hidden border border-gray-200 bg-gray-50 shadow-sm">
                                 <img
-                                    src={imagePreview}
-                                    alt="Preview"
-                                    className="w-full h-full object-contain rounded-md"
-                                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/400x300?text=No+Preview'; }}
+                                    src={coverImage.preview}
+                                    alt="Cover"
+                                    className={`w-full h-full object-cover transition-opacity ${coverImage.uploading ? 'opacity-50' : 'opacity-100'}`}
                                 />
-                                <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center rounded-md transition-all">
-                                    <button type="button" onClick={removeCoverImage} className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full"><Trash2 size={20} /></button>
+                                {coverImage.uploading && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                        <Loader2 className="animate-spin text-white w-8 h-8" />
+                                    </div>
+                                )}
+                                {!coverImage.uploading && (coverImage.serverUrl || coverImage.uniqueName) && (
+                                    <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1">
+                                        <Check size={14} />
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center transition-all cursor-pointer" onClick={(e) => removeCoverImage(e)}>
+                                    <button
+                                        type="button"
+                                        onClick={(e) => removeCoverImage(e)}
+                                        className="bg-red-500 hover:bg-red-600 text-white p-3 rounded-full transform hover:scale-110 transition-transform"
+                                    >
+                                        <Trash2 size={24} />
+                                    </button>
                                 </div>
                             </div>
                         ) : (
-                            <div className="text-center p-4">
-                                <div className="bg-teal-50 text-teal-600 rounded-full p-3 w-12 h-12 flex items-center justify-center mx-auto mb-3"><UploadCloud size={24} /></div>
-                                <p className="text-sm font-medium text-gray-700">Click to upload cover</p>
-                            </div>
+                            <label className={`w-full h-64 border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all duration-200 cursor-pointer bg-white hover:bg-teal-50 hover:shadow-sm ${errors.cover_image ? 'border-red-300 bg-red-50' : 'border-gray-300 hover:border-teal-500'}`}>
+                                <input
+                                    type="file"
+                                    hidden
+                                    ref={coverInputRef}
+                                    accept="image/*"
+                                    onChange={handleCoverSelect}
+                                />
+                                <div className="p-4 bg-teal-100 rounded-full mb-4 text-teal-600">
+                                    <UploadCloud className="w-10 h-10" />
+                                </div>
+                                <span className="text-base text-gray-700 font-semibold">{t('images.click_to_upload')}</span>
+                                <span className="text-sm text-gray-500 mt-1">{t('images.formats')}</span>
+                            </label>
                         )}
                     </div>
                 </div>
 
-                {/* --- 3. Gallery Images (Multiple) --- */}
+                {/* --- 3. Gallery Images --- */}
                 <div className="space-y-4">
                     <div className="flex justify-between items-center">
-                        <label className="block text-sm font-medium text-gray-700">Tournament Gallery (Optional)</label>
+                        <label className="block text-sm font-medium text-gray-700">{t('sections.gallery')}</label>
                         <button
                             type="button"
                             onClick={() => galleryInputRef.current.click()}
-                            className="flex items-center gap-1 text-teal-600 hover:text-teal-700 text-xs font-semibold bg-teal-50 px-2 py-1 rounded"
+                            className="flex items-center gap-1 text-teal-600 hover:text-teal-700 text-xs font-semibold bg-teal-50 px-2 py-1 rounded border border-teal-200"
                         >
-                            <Plus size={14} /> Add Photos
+                            <Plus size={14} /> {t('images.add_photos')}
                         </button>
                     </div>
 
                     <input type="file" hidden ref={galleryInputRef} accept="image/*" multiple onChange={handleGallerySelect} />
 
-                    {/* Gallery Grid */}
-                    {galleryImages.length > 0 ? (
-                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
-                            {galleryImages.map((img) => (
-                                <div key={img.id} className="relative aspect-square border rounded-lg overflow-hidden group bg-gray-50">
-                                    {img.isUploading ? (
-                                        <div className="absolute inset-0 flex items-center justify-center bg-white/80">
-                                            <Loader2 className="w-6 h-6 text-teal-500 animate-spin" />
-                                        </div>
-                                    ) : null}
-
-                                    <img
-                                        src={img.preview}
-                                        alt="Gallery"
-                                        className="w-full h-full object-cover"
-                                        onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/150x150?text=No+Img'; }}
-                                    />
-
-                                    {!img.isUploading && (
-                                        <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center transition-all">
-                                            <button
-                                                type="button"
-                                                onClick={() => removeGalleryImage(img.id)}
-                                                className="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </div>
-                                    )}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-4">
+                        {galleryImages.map((img) => (
+                            <div key={img.id} className="relative aspect-square border rounded-lg overflow-hidden group bg-gray-50 shadow-sm">
+                                <img
+                                    src={img.preview}
+                                    alt="Gallery"
+                                    className={`w-full h-full object-cover ${img.uploading ? 'opacity-50' : 'opacity-100'}`}
+                                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/150x150?text=Error'; }}
+                                />
+                                {img.uploading && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                        <Loader2 className="w-6 h-6 text-teal-500 animate-spin" />
+                                    </div>
+                                )}
+                                {!img.uploading && (
+                                    <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-0.5">
+                                        <Check size={10} />
+                                    </div>
+                                )}
+                                <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center transition-all">
+                                    <button
+                                        type="button"
+                                        onClick={() => removeGalleryImage(img.id)}
+                                        className="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
                                 </div>
-                            ))}
-                            <div
-                                onClick={() => galleryInputRef.current.click()}
-                                className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-teal-500 hover:bg-teal-50 transition-all text-gray-400 hover:text-teal-600"
-                            >
-                                <Plus size={24} />
-                                <span className="text-xs mt-1">Add More</span>
                             </div>
-                        </div>
-                    ) : (
+                        ))}
+
                         <div
                             onClick={() => galleryInputRef.current.click()}
-                            className="w-full p-6 border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center text-gray-500 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50 cursor-pointer transition-all"
+                            className="aspect-square border-2 border-dashed border-gray-300 rounded-lg flex flex-col items-center justify-center cursor-pointer hover:border-teal-500 hover:bg-teal-50 transition-all text-gray-400 hover:text-teal-600"
                         >
-                            <ImageIcon size={32} className="mb-2 opacity-50" />
-                            <p className="text-sm font-medium">Add Gallery Images</p>
-                            <p className="text-xs opacity-70">Support multiple upload</p>
+                            <Plus size={24} />
+                            <span className="text-xs mt-1 font-medium">{t('images.add_more')}</span>
                         </div>
-                    )}
+                    </div>
                 </div>
 
                 {/* --- 4. Date & Time --- */}
                 <div className="space-y-6">
                     <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                        <Calendar size={20} /> Schedule
+                        <Calendar size={20} /> {t('sections.schedule')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <MainInput type="date" label="Start Date" name="start_date" value={formData.start_date} onChange={handleChange} error={errors.start_date} required />
-                        <MainInput type="date" label="End Date" name="end_date" value={formData.end_date} onChange={handleChange} error={errors.end_date} required />
-
-                        {/* UPDATED: Registration Deadline now Required */}
-                        <MainInput
-                            type="date"
-                            label="Registration Deadline"
-                            name="registration_deadline"
-                            value={formData.registration_deadline}
-                            onChange={handleChange}
-                            error={errors.registration_deadline}
-                            required
-                        />
+                        <MainInput type="date" label={t('fields.start_date')} name="start_date" value={formData.start_date} onChange={handleChange} error={errors.start_date} required />
+                        <MainInput type="date" label={t('fields.end_date')} name="end_date" value={formData.end_date} onChange={handleChange} error={errors.end_date} required />
+                        <MainInput type="date" label={t('fields.registration_deadline')} name="registration_deadline" value={formData.registration_deadline} onChange={handleChange} error={errors.registration_deadline} required />
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* UPDATED: Start Time now Required */}
-                        <MainInput
-                            type="time"
-                            label="Start Time"
-                            name="start_time"
-                            value={formData.start_time}
-                            onChange={handleChange}
-                            icon={Clock}
-                            error={errors.start_time}
-                            required
-                        />
-                        {/* UPDATED: End Time now Required */}
-                        <MainInput
-                            type="time"
-                            label="End Time"
-                            name="end_time"
-                            value={formData.end_time}
-                            onChange={handleChange}
-                            icon={Clock}
-                            error={errors.end_time}
-                            required
-                        />
+                        <MainInput type="time" label={t('fields.start_time')} name="start_time" value={formData.start_time} onChange={handleChange} icon={Clock} error={errors.start_time} required />
+                        <MainInput type="time" label={t('fields.end_time')} name="end_time" value={formData.end_time} onChange={handleChange} icon={Clock} error={errors.end_time} required />
                     </div>
                 </div>
 
                 {/* --- 5. Game Details --- */}
                 <div className="space-y-6">
                     <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                        <Activity size={20} /> Game Details
+                        <Activity size={20} /> {t('sections.game_details')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         <div className="flex flex-col">
-                            <label className="text-sm font-medium text-gray-700 mb-1">Venue <span className='text-red-500'>*</span></label>
+                            <label className="text-sm font-medium text-gray-700 mb-1">{t('fields.venue.label')} <span className='text-red-500'>*</span></label>
                             <div className="relative">
                                 <select name="venue" value={formData.venue} onChange={handleChange} className="w-full pl-3 pr-10 py-2 border rounded-lg bg-white outline-none focus:border-teal-500">
-                                    <option value="">Select Venue</option>
+                                    <option value="">{t('fields.venue.placeholder')}</option>
                                     {venuesList && venuesList.map((item, index) => <option key={index} value={item.value}>{item.label}</option>)}
                                 </select>
                                 <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -510,9 +498,9 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
                             {errors.venue && <p className="text-red-500 text-xs mt-1">{errors.venue}</p>}
                         </div>
 
-                        {/* UPDATED: Sport now Required */}
+                        {/* --- SPORT SELECTION --- */}
                         <div className="flex flex-col">
-                            <label className="text-sm font-medium text-gray-700 mb-1">Sport <span className='text-red-500'>*</span></label>
+                            <label className="text-sm font-medium text-gray-700 mb-1">{t('fields.sport.label')} <span className='text-red-500'>*</span></label>
                             <div className="relative">
                                 <select
                                     name="sport"
@@ -520,7 +508,7 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
                                     onChange={handleChange}
                                     className={`w-full pl-3 pr-10 py-2 border rounded-lg bg-white outline-none focus:border-teal-500 ${errors.sport ? 'border-red-500' : ''}`}
                                 >
-                                    <option value="">Select Sport</option>
+                                    <option value="">{t('fields.sport.placeholder')}</option>
                                     {activeSportsList.map((item, index) => <option key={index} value={item.value}>{item.label}</option>)}
                                 </select>
                                 <ChevronDown size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
@@ -529,7 +517,7 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
                         </div>
 
                         <div className="flex flex-col">
-                            <label className="text-sm font-medium text-gray-700 mb-1">Scoring System</label>
+                            <label className="text-sm font-medium text-gray-700 mb-1">{t('fields.scoring_system')}</label>
                             <div className="relative">
                                 <select name="scoring_system" value={formData.scoring_system} onChange={handleChange} className="w-full pl-3 pr-10 py-2 border rounded-lg bg-white outline-none focus:border-teal-500">
                                     {scoringOptions.map(opt => <option key={opt.value} value={opt.value}>{opt.label}</option>)}
@@ -538,24 +526,38 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
                             </div>
                         </div>
 
-                        <MainInput label="Max Teams" name="max_teams" type="number" value={formData.max_teams} onChange={handleChange} error={errors.max_teams} icon={Users} required />
-                        <MainInput label="Entry Fee" name="entry_fee" type="number" value={formData.entry_fee} onChange={handleChange} icon={DollarSign} />
+                        <MainInput label={t('fields.max_teams')} name="max_teams" type="number" value={formData.max_teams} onChange={handleChange} error={errors.max_teams} icon={Users} required />
+                        <MainInput label={t('fields.entry_fee')} name="entry_fee" type="number" value={formData.entry_fee} onChange={handleChange} icon={DollarSign} />
                     </div>
                 </div>
 
                 {/* --- 6. Rules & Prizes --- */}
                 <div className="space-y-6">
                     <h3 className="text-lg font-semibold text-gray-700 border-b pb-2 flex items-center gap-2">
-                        <FileText size={20} /> Details
+                        <FileText size={20} /> {t('sections.details')}
                     </h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="flex flex-col">
-                            <label className="text-sm font-medium text-gray-700 mb-1">Rules</label>
-                            <textarea name="rules" value={formData.rules} onChange={handleChange} rows="4" className="w-full p-3 border rounded-lg focus:border-teal-500 outline-none text-sm" placeholder="Enter tournament rules..." />
+                            <label className="text-sm font-medium text-gray-700 mb-1">{t('fields.rules.label')}</label>
+                            <textarea
+                                name="rules"
+                                value={formData.rules}
+                                onChange={handleChange}
+                                rows="4"
+                                className="w-full p-3 border rounded-lg focus:border-teal-500 outline-none text-sm"
+                                placeholder={t('fields.rules.placeholder')}
+                            />
                         </div>
                         <div className="flex flex-col">
-                            <label className="text-sm font-medium text-gray-700 mb-1">Prizes</label>
-                            <textarea name="prizes" value={formData.prizes} onChange={handleChange} rows="4" className="w-full p-3 border rounded-lg focus:border-teal-500 outline-none text-sm" placeholder="Enter prize details..." />
+                            <label className="text-sm font-medium text-gray-700 mb-1">{t('fields.prizes.label')}</label>
+                            <textarea
+                                name="prizes"
+                                value={formData.prizes}
+                                onChange={handleChange}
+                                rows="4"
+                                className="w-full p-3 border rounded-lg focus:border-teal-500 outline-none text-sm"
+                                placeholder={t('fields.prizes.placeholder')}
+                            />
                         </div>
                     </div>
                 </div>
@@ -563,15 +565,15 @@ const TournamentsForm = ({ venuesList = [], sportsList = [], onCancel, onSuccess
                 {/* --- 7. Status --- */}
                 <div className="bg-primary-50 p-6 rounded-lg space-y-4 border border-gray-200">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <MainInput type="checkbox" label="Is Active?" name="is_active" value={formData.is_active} onChange={handleChange} />
+                        <MainInput type="checkbox" label={t('fields.is_active')} name="is_active" value={formData.is_active} onChange={handleChange} />
                     </div>
                 </div>
 
                 {/* Buttons */}
                 <div className="flex gap-4 pt-4">
-                    <button type="button" onClick={onCancel} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors">Cancel</button>
-                    <button type="submit" disabled={isSubmitting || isImageUploading} className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
-                        {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <><Save size={20} /> {initialData ? "Update Tournament" : "Save Tournament"}</>}
+                    <button type="button" onClick={onCancel} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 px-6 rounded-lg transition-colors">{t('buttons.cancel')}</button>
+                    <button type="submit" disabled={isSubmitting || coverImage?.uploading || galleryImages.some(img => img.uploading)} className="flex-1 flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors">
+                        {isSubmitting ? <Loader2 size={20} className="animate-spin" /> : <><Save size={20} /> {initialData ? t('buttons.update') : t('buttons.save')}</>}
                     </button>
                 </div>
             </form>

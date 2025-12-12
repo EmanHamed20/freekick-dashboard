@@ -32,6 +32,12 @@ import enAmenitiesForm from '../locales/en/Amenities/AmenitiesForm.json';
 import arAmenitiesForm from '../locales/ar/Amenities/AmenitiesForm.json';
 import enAmenitiesPage from '../locales/en/Amenities/AmenitiesPage.json';
 import arAmenitiesPage from '../locales/ar/Amenities/AmenitiesPage.json';
+import enTournamentForm from '../locales/en/Tournaments/tournamentForm.json';
+import arTournamentForm from '../locales/ar/Tournaments/tournamentForm.json';
+import enTournamentPage from '../locales/en/Tournaments/tournamentPage.json';
+import arTournamentPage from '../locales/ar/Tournaments/tournamentPage.json';
+import entournamentDetails from '../locales/en/Tournaments/tournamentDetails.json';
+import artournamentDetails from '../locales/ar/Tournaments/tournamentDetails.json';
 
 // Translation resources
 const resources = {
@@ -50,6 +56,10 @@ const resources = {
         support: enSupport,
         amenitiesForm: enAmenitiesForm,
         amenitiesPage: enAmenitiesPage,
+        tournamentForm: enTournamentForm,
+        tournamentPage: enTournamentPage,
+        tournamentDetails: entournamentDetails,
+
 
     },
     ar: {
@@ -67,6 +77,10 @@ const resources = {
         support: arSupport,
         amenitiesForm: arAmenitiesForm,
         amenitiesPage: arAmenitiesPage,
+        tournamentForm: arTournamentForm,
+        tournamentPage: arTournamentPage,
+        tournamentDetails: artournamentDetails,
+
 
 
     },
@@ -101,7 +115,10 @@ i18n
             'venueEditRequestDetails',
             'support',
             'amenitiesForm',
-            'amenitiesPage'
+            'amenitiesPage',
+            'tournamentForm',
+            'tournamentPage',
+            'tournamentDetails'
         ],        debug: process.env.NODE_ENV === 'development',
         interpolation: {
             escapeValue: false,
