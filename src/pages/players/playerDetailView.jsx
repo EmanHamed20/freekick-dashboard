@@ -1,8 +1,7 @@
 import React, {useMemo, useState} from 'react';
-import { Calendar, Trophy, RefreshCw } from 'lucide-react'; // Added RefreshCw
+import { Calendar, Trophy, RefreshCw } from 'lucide-react';
 import { toast } from 'react-toastify';
 
-// Components
 import BookingCard from '../../components/players/BookingCard.jsx';
 import PlayerProfileCard from '../../components/players/PlayerProfileCard.jsx';
 import PlayerPoints from './PlayerPoints';
@@ -10,17 +9,14 @@ import MainTable from '../../components/MainTable';
 import ArrowIcon from '../../components/common/ArrowIcon';
 import { ReusableDatePicker } from '../../components/common/ReusableDatePicker';
 
-// Hooks
 import { usePlayer, usePlayerBookings, usePlayerTournaments, useUpdatePlayerStatus } from '../../hooks/usePlayers.js';
 import { playerService } from '../../services/players/playerService';
 import { showConfirm } from '../../components/showConfirm';
 
-// Utils
-import { formatDate, calculateAge, formatAmount } from '../../hooks/players/formatters.js'; // Fixed path
+import { formatDate, calculateAge, formatAmount } from '../../hooks/players/formatters.js';
 import { getTournamentColumns } from '../../hooks/players/tournamentColumns.jsx';
-import {useLocation, useNavigate} from "react-router-dom"; // Fixed path
+import {useLocation, useNavigate} from "react-router-dom";
 
-// Constants
 const TOURNAMENT_FILTERS = [
     {
         key: 'status',
@@ -53,14 +49,10 @@ const PlayerDetailView = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const playerFromState = location.state?.player;
-
     const playerId = playerFromState?.id || 1;
 
-    // Booking state management
     const [bookingDate, setBookingDate] = useState(new Date());
     const [bookingStatus, setBookingStatus] = useState('all');
-
-    // Tournament state management
     const [tournamentSearch, setTournamentSearch] = useState('');
     const [tournamentFilters, setTournamentFilters] = useState({});
     const [tournamentSort, setTournamentSort] = useState({
@@ -69,7 +61,7 @@ const PlayerDetailView = () => {
     });
     const [currentTournamentPage, setCurrentTournamentPage] = useState(1);
     const tournamentsPerPage = 5;
-    // Calculate booking filters
+
     const bookingFilters = useMemo(() => {
         const formattedDate = bookingDate.toISOString().split('T')[0];
         return {
@@ -78,7 +70,6 @@ const PlayerDetailView = () => {
         };
     }, [bookingDate, bookingStatus]);
 
-    // Use hooks with proper filters
     const { player, isLoading: isFetchingDetails, refetch: refetchPlayer } = usePlayer(playerId);
     const { bookings, isLoading: bookingsLoading, refetch: refetchBookings } = usePlayerBookings(playerId, bookingFilters);
     const { tournaments, isLoading: tournamentsLoading } = usePlayerTournaments(playerId);
@@ -87,15 +78,6 @@ const PlayerDetailView = () => {
     const currentPlayer = player || playerFromState || getDefaultPlayer();
     const filteredBookings = useMemo(() => bookings?.results || [], [bookings]);
     const tournamentColumns = getTournamentColumns();
-
-    // Debug logging to track bookings
-    console.log('Bookings debug:', {
-        playerId,
-        bookingFilters,
-        bookingsData: bookings,
-        filteredBookingsCount: filteredBookings.length,
-        isLoading: bookingsLoading
-    });
 
     const handleStatusToggle = async (newStatus) => {
         try {
@@ -111,7 +93,6 @@ const PlayerDetailView = () => {
                 await playerService.updatePlayerStatus(playerId, newStatus);
                 toast.success(`Player ${newStatus ? 'activated' : 'suspended'} successfully`);
                 refetchPlayer();
-                onRefresh?.();
             }
         } catch (error) {
             console.error('Status update error:', error);
@@ -119,7 +100,6 @@ const PlayerDetailView = () => {
         }
     };
 
-    // Tournament handlers
     const handleTournamentSearch = (searchTerm) => {
         setTournamentSearch(searchTerm);
         setCurrentTournamentPage(1);
@@ -138,18 +118,19 @@ const PlayerDetailView = () => {
         setCurrentTournamentPage(page);
     };
 
-    if (isFetchingDetails) {
-        return <LoadingSpinner />;
-    }
     const handleBack = () => {
         navigate('/players');
     };
+
+    if (isFetchingDetails) {
+        return <LoadingSpinner />;
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">
             <Header onBack={handleBack} />
 
-            <div className="mx-auto  py-6">
+            <div className="mx-auto py-6">
                 <div className="grid grid-cols-1 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
                     <div className="col-span-1">
                         <PlayerProfileCard
@@ -166,11 +147,11 @@ const PlayerDetailView = () => {
                         <BookingsSection
                             bookings={filteredBookings}
                             isLoading={bookingsLoading}
-                            bookingDate={bookingDate} // ✅ Use local state
-                            bookingStatus={bookingStatus} // ✅ Use local state
-                            onDateChange={setBookingDate} // ✅ Use local setter
-                            onStatusChange={setBookingStatus} // ✅ Use local setter
-                            onRefresh={refetchBookings} // ✅ Add refresh handler
+                            bookingDate={bookingDate}
+                            bookingStatus={bookingStatus}
+                            onDateChange={setBookingDate}
+                            onStatusChange={setBookingStatus}
+                            onRefresh={refetchBookings}
                         />
 
                         <TournamentsSection
@@ -195,7 +176,6 @@ const PlayerDetailView = () => {
     );
 };
 
-// Helper Components
 const Header = ({ onBack }) => (
     <div className="bg-white shadow-sm">
         <div className="mx-auto px-4 sm:px-6 py-4">
@@ -228,11 +208,6 @@ const BookingsSection = ({
                              onStatusChange,
                              onRefresh
                          }) => {
-    console.log('BookingsSection render:', {
-        bookingsCount: bookings?.length || 0,
-        isLoading
-    });
-
     return (
         <div className="bg-white px-2 rounded-lg shadow-sm border border-gray-100">
             <div className="p-3 lg:px-5 flex flex-wrap justify-between items-center border-b border-gray-100">
@@ -377,7 +352,6 @@ const NoTournamentsMessage = () => (
     </div>
 );
 
-// Helper function
 const getDefaultPlayer = () => ({
     id: 1,
     name: 'Ali Raheem',
